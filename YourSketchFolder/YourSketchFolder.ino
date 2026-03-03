@@ -10,3 +10,17 @@
 
   All system behavior is delegated to the App module.
 */
+
+#include "app.h"
+
+static App app;
+
+void setup()
+{
+    app.begin();
+}
+
+void loop()
+{
+    app.tick(millis());
+}
