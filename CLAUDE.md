@@ -3,7 +3,7 @@
 You are developing firmware for a ESP32-S3 connected via USB.
 
 ## Hardware
-- Board: ESP32-S3
+- Board: ESP32-S3-DevKitC-1 N8R8 (8 MB Flash, 8 MB OPI PSRAM)
 - Port: COM4
 - Framework: arduino
 - Baud rate: 115200
@@ -50,12 +50,12 @@ Installed libraries live at: `C:\Users\m3kel\OneDrive\Documents\Arduino\librarie
 
 Compile:
 ```
-arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200 .
+arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi .
 ```
 
 Flash:
 ```
-arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200 --port COM4 .
+arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi --port COM4 .
 ```
 Monitor:
 ```
@@ -67,9 +67,9 @@ arduino-cli monitor --port COM4 --config baudrate=115200
 Every time you change code, follow this exact sequence:
 
 1. Edit your firmware source files
-2. Compile: `arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200 .`
+2. Compile: `arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi .`
 3. If compile fails, read the errors, fix them, and recompile. Do NOT flash broken code.
-4. Flash: `arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200 --port COM4 .`
+4. Flash: `arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi --port COM4 .`
 5. Wait 3 seconds for the board to reboot.
 6. **Validate your changes** using the debugging methods below. Pick the right tool for what you're checking.
 7. If validation fails, go back to step 1 and iterate.

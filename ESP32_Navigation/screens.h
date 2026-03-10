@@ -3,23 +3,24 @@
 /*
   File: screens.h
   ----------------------------------------------------
-  Screen layout definitions.
+  Screen rendering function declarations.
 
-  Responsibilities:
-  - Declare screen rendering functions
-  - Keep layout decisions separated from system logic
+  Each function owns one full screen layout.
+  TFT_eSPI& is passed in so screens.cpp has no global state.
 
-  Currently a stub for minimum compile.
+  Rules:
+  - Use setTextColor(fg, bg) — always set a background colour so
+    text rewrites cleanly without artefacts or leftover pixels.
+  - Do NOT call fillScreen() — display.cpp handles full clears
+    on screen transitions.
+  - Use char[] buffers for formatted strings, not String objects.
 */
 
-#include <stdint.h>
+#include <TFT_eSPI.h>
 #include "types.h"
 
-// NOTE: We intentionally avoid including TFT_eSPI here for now.
-// Later these functions will accept a Display/TFT reference.
-
-void drawBootScreen(const GnssFix& fix, const Diagnostics& diag);
-void drawStatusScreen(const GnssFix& fix, const Diagnostics& diag);
-void drawNavigationScreen(const GnssFix& fix, const Diagnostics& diag);
+void drawBootScreen      (TFT_eSPI& tft, const GnssFix& fix, const Diagnostics& diag);
+void drawStatusScreen    (TFT_eSPI& tft, const GnssFix& fix, const Diagnostics& diag);
+void drawNavigationScreen(TFT_eSPI& tft, const GnssFix& fix, const Diagnostics& diag);
 
 #endif

@@ -3,18 +3,19 @@
 /*
   File: display.h
   ----------------------------------------------------
-  TFT display interface.
+  TFT display driver interface.
 
   Responsibilities:
-  - Initialize display hardware
-  - Provide a render entry point
+  - Own the TFT_eSPI instance (one owner: the UI FreeRTOS task)
+  - Initialise hardware and backlight
+  - Detect screen transitions and issue full clears
+  - Dispatch per-frame render to screen-specific functions in screens.cpp
 
-  NOTE:
-  - This is a stub for minimum compile.
-  - TFT_eSPI integration will be added later.
+  Do NOT call any method from outside the UI task.
 */
 
 #include <stdint.h>
+#include <TFT_eSPI.h>
 #include "types.h"
 
 class Display
@@ -22,16 +23,26 @@ class Display
 public:
     Display();
 
+    // Initialises TFT and LEDC backlight. Call once from UI task before render().
     void begin();
 
-    // Render based on current UI screen selection
+    // Dispatches to the correct screen draw function.
+    // Full screen clear is issued only on screen transitions.
     void render(ScreenId screen,
                 const GnssFix& fix,
                 const Diagnostics& diag,
                 uint32_t nowMs);
 
+    // 0 = backlight off, 255 = full brightness.
+    void setBacklight(uint8_t brightness);
+
+    // Expose tft to screens.cpp draw functions via reference.
+    TFT_eSPI& getTft() { return tft; }
+
 private:
-    uint32_t lastRenderMs;
+    TFT_eSPI tft;
+    ScreenId currentScreen;
+    bool     initialised;
 };
 
 #endif
