@@ -12,7 +12,7 @@
   - Tasks never block each other for more than a memcpy
 
   Tasks:
-    GNSS   — polls Serial1, assembles NMEA lines, updates shared fix
+    GNSS   — calls gnss.tick() which blocks on getPVT() (~1 s at 1 Hz)
     UI     — renders display at ~20 FPS using a local snapshot of fix
     Health — prints a structured [STATUS] heartbeat every 2 seconds
 */

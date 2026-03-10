@@ -40,9 +40,9 @@ Display::Display()
 void Display::begin()
 {
     // Configure LEDC backlight — off during init to avoid white flash
-    ledcSetup(TFT_BL_LEDC_CHANNEL, TFT_BL_FREQ_HZ, TFT_BL_RES_BITS);
-    ledcAttachPin(TFT_BL_PIN, TFT_BL_LEDC_CHANNEL);
-    ledcWrite(TFT_BL_LEDC_CHANNEL, 0);
+    // ESP32 Arduino core v3+: ledcAttach() replaces ledcSetup() + ledcAttachPin()
+    ledcAttach(TFT_BL_PIN, TFT_BL_FREQ_HZ, TFT_BL_RES_BITS);
+    ledcWrite(TFT_BL_PIN, 0);
 
     tft.init();
     tft.setRotation(1);          // Landscape: 320 × 240
@@ -61,7 +61,7 @@ void Display::begin()
 
 void Display::setBacklight(uint8_t brightness)
 {
-    ledcWrite(TFT_BL_LEDC_CHANNEL, brightness);
+    ledcWrite(TFT_BL_PIN, brightness);
 }
 
 // ---------------------------------------------------------------

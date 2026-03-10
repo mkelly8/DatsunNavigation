@@ -16,8 +16,6 @@
     Font 7: 48 px  — 7-segment style numerics
 */
 
-#include <stdio.h>
-
 // ---------------------------------------------------------------
 // Boot screen — shown during startup / GNSS acquisition
 // ---------------------------------------------------------------

@@ -52,9 +52,8 @@
 // TFT_RST tied to 3.3V — no GPIO needed
 
 // Backlight PWM (LEDC)
-#define TFT_BL_PIN           6
-#define TFT_BL_LEDC_CHANNEL  0   // LEDC channels 0-15 available on ESP32-S3
+#define TFT_BL_PIN        6
 #define TFT_BL_FREQ_HZ    5000
-#define TFT_BL_RES_BITS      8   // 0-255 duty cycle
+#define TFT_BL_RES_BITS   8     // 0-255 duty cycle
 
 #endif

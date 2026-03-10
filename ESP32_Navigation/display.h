@@ -36,9 +36,6 @@ public:
     // 0 = backlight off, 255 = full brightness.
     void setBacklight(uint8_t brightness);
 
-    // Expose tft to screens.cpp draw functions via reference.
-    TFT_eSPI& getTft() { return tft; }
-
 private:
     TFT_eSPI tft;
     ScreenId currentScreen;
