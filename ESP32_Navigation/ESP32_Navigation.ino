@@ -23,5 +23,5 @@ void loop()
 {
     // All work is done in FreeRTOS tasks created by app.begin().
     // Suspend this task indefinitely to avoid wasting CPU.
-    vTaskDelay(portMAX_DELAY);
+    vTaskDelay(portMAX_DELAY); // or NULL
 }

@@ -43,7 +43,16 @@ void Gnss::begin()
     // Output only UBX protocol — disables NMEA output on the I2C port
     gnssModule.setI2COutput(COM_TYPE_UBX);
 
-    // Persist the I2C-output setting to the module's flash so it survives power cycles
+    // 2 Hz update rate — PVT arrives every 500 ms instead of 1 s
+    gnssModule.setNavigationFrequency(2);
+
+    // Auto-push PVT: module sends each solution unprompted.
+    // getPVT() then returns immediately when new data is ready,
+    // rather than polling and blocking for a full update cycle.
+    gnssModule.setAutoPVT(true);
+
+    // Save only the I/O port config to flash — not all settings.
+    // saveConfiguration() would also bake in nav frequency etc.
     gnssModule.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);
 
     fix = GnssFix{};
@@ -53,10 +62,10 @@ void Gnss::tick(uint32_t nowMs)
 {
     if (!deviceFound) return;
 
-    // getPVT() blocks until a fresh NAV-PVT packet arrives.
-    // At the default 1 Hz update rate this takes up to ~1 s.
+    // getPVT() blocks until a fresh NAV-PVT packet arrives (~500 ms at 2 Hz).
+    // getInvalidLlh() rejects packets where lat/lon are flagged invalid by the module.
     // The GNSS FreeRTOS task has no vTaskDelayUntil — getPVT() is the pacing mechanism.
-    if (!gnssModule.getPVT()) return;
+    if (!gnssModule.getPVT() || gnssModule.getInvalidLlh()) return;
 
     fix.valid      = gnssModule.getGnssFixOk();
     fix.fixQuality = gnssModule.getFixType();

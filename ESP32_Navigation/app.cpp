@@ -47,11 +47,14 @@ void App::begin()
 
     fixMutex = xSemaphoreCreateMutex();
 
+    // Initialization before tasks start
     gnss.begin();
     display.begin();
     ui.begin();
-
-    xTaskCreatePinnedToCore(gnssTask,   "GNSS",   TASK_STACK_GNSS,   this, TASK_PRIORITY_GNSS,   &gnssTaskHandle,   CORE_GNSS);
+    
+    // Initializing tasks to work in parallel
+    // xTaskCreatePinnedToCore(Function, Name, StackSize, Param, Priority, Handle, CoreID);
+    xTaskCreatePinnedToCore(gnssTask,   "GNSS",   TASK_STACK_GNSS,   this, TASK_PRIORITY_GNSS,   &gnssTaskHandle,   CORE_GNSS); 
     xTaskCreatePinnedToCore(uiTask,     "UI",     TASK_STACK_UI,     this, TASK_PRIORITY_UI,     &uiTaskHandle,     CORE_UI);
     xTaskCreatePinnedToCore(healthTask, "Health", TASK_STACK_HEALTH, this, TASK_PRIORITY_HEALTH, &healthTaskHandle, CORE_HEALTH);
 

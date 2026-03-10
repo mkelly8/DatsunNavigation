@@ -1,5 +1,8 @@
 # Embedded Development: ESP32-S3
 
+## Project Goal
+Automotive navigation display for a Datsun. The device receives a pre-uploaded route, tracks position via GNSS, and drives a TFT screen to show upcoming turn instructions. Core pipeline: route stored on device → GNSS fix compared against road segments (teammate's logic) → display shows turn distance/direction. This is a vehicle-mounted unit — no touchscreen, minimal interaction, optimized for glanceability.
+
 You are developing firmware for a ESP32-S3 connected via USB.
 
 ## Hardware
