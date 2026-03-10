@@ -32,7 +32,9 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
   - 8MB PSRAM
 
 ### GNSS Module
-- UART-based GNSS module outputting NMEA sentences
+- I2C (Qwiic) GNSS module outputting NMEA sentences
+- Connected via Qwiic connector: SDA=GPIO8, SCL=GPIO9
+- Default I2C address: 0x42 (u-blox)
 
 ### Display
 - SPI TFT display driven using TFT_eSPI
@@ -49,7 +51,14 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
 
 ### Required Libraries
 
-- TFT_eSPI
+```
+arduino-cli lib install "SparkFun u-blox GNSS v3"
+arduino-cli lib install "TFT_eSPI"
+```
+
+- **SparkFun u-blox GNSS v3** — UBX binary protocol over I2C
+- **TFT_eSPI** — SPI display driver (requires `User_Setup.h` configuration — see `.gitignore`)
+- **Wire** — built-in ESP32 Arduino core
 
 ---
 
@@ -79,7 +88,7 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
 |---------|---------------|
 | `.ino` | Minimal entrypoint (setup + loop only) |
 | `app` | System scheduler and orchestrator |
-| `gnss` | UART interface and GNSS state management |
+| `gnss` | I2C (Qwiic) interface and GNSS state management |
 | `gnss_parser_nmea` | NMEA sentence parsing |
 | `display` | TFT driver wrapper |
 | `screens` | Rendering layouts |
@@ -91,7 +100,7 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
 
 ## Firmware Design Principles
 
-- Non-blocking scheduling using `millis()`
+- FreeRTOS task-based scheduling (GNSS, UI, Health tasks)
 - Clear separation of concerns
 - No heavy logic inside interrupt context
 - GNSS parsing independent of display logic
@@ -102,13 +111,11 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
 
 ## GNSS Handling
 
-- Reads raw NMEA sentences via UART
-- Validates checksum
-- Parses:
-  - GGA (fix quality, satellites, HDOP)
-  - RMC (latitude, longitude, speed, course)
-- Maintains a single authoritative `GnssFix` structure
-- Detects stale fixes via timestamp comparison
+- Communicates via **UBX binary protocol** over I2C (Qwiic) using the SparkFun u-blox GNSS v3 library
+- Polls **UBX-NAV-PVT** packets for position, velocity, and time in a single request
+- Populates `GnssFix` from PVT fields: fix validity, fix type, SIV, HDOP, lat/lon, speed, heading
+- Maintains a single authoritative `GnssFix` structure shared under a FreeRTOS mutex
+- Detects stale fixes via `lastUpdateMs` timestamp comparison (`time_utils.h`)
 
 ---
 
@@ -125,12 +132,9 @@ The architecture separates hardware interfaces, parsing logic, UI, and system or
 
 Tracks:
 
-- UART byte count
-- Parsed sentence count
-- Checksum failures
-- Frame count
-- Fix validity
-- Last GNSS update timestamp
+- UBX-NAV-PVT packet count
+- Display frame count
+- Fix validity and last update timestamp
 
 Designed to support soak testing and integration validation.
 
@@ -139,8 +143,8 @@ Designed to support soak testing and integration validation.
 ## Functional Validation Plan
 
 ### Electrical Validation
-- UART stress test
-- SPI stability validation
+- I2C bus integrity test (Qwiic GNSS)
+- SPI stability validation (TFT display)
 - PWM verification (if backlight controlled)
 - Power consumption measurement
 
@@ -180,9 +184,9 @@ Designed to support soak testing and integration validation.
 
 ## Development Roadmap
 
-Phase 1  
-- GNSS UART pipeline validated  
-- NMEA parsing confirmed  
+Phase 1
+- GNSS I2C (Qwiic) pipeline validated
+- UBX-NAV-PVT data confirmed
 
 Phase 2  
 - Display integration  
@@ -205,11 +209,13 @@ Phase 5
 
 ## Known Risks
 
-- UART blocking display updates  
-- Memory fragmentation from dynamic allocation  
-- SPI timing conflicts  
-- Thermal buildup in enclosure  
-- Power rail instability under load  
+- `getPVT()` blocks the GNSS task for ~1 s — acceptable in dedicated task, do not call from UI or health tasks
+- I2C address collision if other Qwiic devices share the bus at 0x42
+- Memory fragmentation from dynamic allocation
+- SPI timing conflicts (TFT)
+- TFT_eSPI `User_Setup.h` misconfiguration causes silent display failure
+- Thermal buildup in enclosure
+- Power rail instability under load
 
 Mitigation strategies are incorporated into sprint planning and validation testing.
 

@@ -16,6 +16,36 @@ Before compiling, ensure your toolchain is configured:
 arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 ```
 
+## Libraries
+
+Install all required libraries before building:
+
+```
+arduino-cli lib install "SparkFun u-blox GNSS v3"
+arduino-cli lib install "TFT_eSPI"
+```
+
+Installed libraries live at: `C:\Users\m3kel\OneDrive\Documents\Arduino\libraries\`
+
+### SparkFun u-blox GNSS v3
+
+- Header: `SparkFun_u-blox_GNSS_v3\src\SparkFun_u-blox_GNSS_v3.h`
+- Main class: `SFE_UBLOX_GNSS`
+- Key methods: `begin(Wire)`, `setI2COutput(COM_TYPE_UBX)`, `saveConfigSelective(VAL_CFG_SUBSEC_IOPORT)`, `getPVT()`, `getLatitude()`, `getLongitude()`, `getSIV()`, `getFixType()`, `getGnssFixOk()`, `getGroundSpeed()`, `getHeading()`, `getHorizontalDOP()`
+- `getPVT()` **blocks** until the module delivers a fresh NAV-PVT packet (~1 s at default 1 Hz). Call only from the dedicated GNSS FreeRTOS task.
+- Before implementing new u-blox features, **read the header** for exact method signatures and return types.
+
+### TFT_eSPI
+
+- Full path: `C:\Users\m3kel\OneDrive\Documents\Arduino\libraries\TFT_eSPI\`
+- Header: `TFT_eSPI\TFT_eSPI.h`
+- **Requires `User_Setup.h`** in the library folder specifying the display driver, SPI pins, and screen dimensions. This file is gitignored (machine-specific).
+- Reference configs are in `TFT_eSPI\User_Setups\` — copy the closest match for your display.
+- Current driver: `ILI9341_DRIVER`, SPI frequency: 27 MHz
+- **Do NOT use GPIO 19 for MISO** — it is the USB D- pin on ESP32-S3.
+- SPI default pins on ESP32-S3: MOSI=11, MISO=13, SCK=12, CS=10 (avoid 19/20 = USB, 8/9 = I2C/Qwiic)
+- `display.cpp` is currently a stub — TFT_eSPI integration is pending.
+
 ## Commands
 
 Compile:
@@ -221,7 +251,7 @@ If the project contains multiple documents (e.g., a reference manual AND a datas
 - **Reference manual** — detailed register descriptions and peripheral operation.
 - **Datasheet** — pinout, electrical characteristics, package information, and ordering codes.
 - **Errata / silicon bugs** — known hardware issues that may require software workarounds. Always check for errata before finalizing a driver.
-- **Application notes** — recommended configurations and design patterns from the manufacturer.
+- **Application** — recommended configurations and design patterns from the manufacturer.
 
 ### Citing Datasheet Sections
 
@@ -233,6 +263,10 @@ SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR_1;  // Master mode, fPCLK/8
 ```
 
 This makes it easy to verify the code against the documentation later.
+
+## Libraries
+  - SparkFun u-blox GNSS v3:
+  C:\Users\m3kel\Documents\Arduino\libraries\SparkFun_u-blox_GNSS_v3\src\SparkFun_u-blox_GNSS_v3.h
 
 ### ESP32 Technical Reference Structure
 

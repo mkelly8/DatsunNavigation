@@ -20,7 +20,8 @@ arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercon
 
 Compile:
 ```
-arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200 .
+arduino-cli compile --fqbn esp32:esp32:esp32s3:PSRAM=opi,FlashSize=8M,CDCOnBoot=cdc,UploadSpeed=115200 .
+
 ```
 
 Flash:

@@ -245,6 +245,9 @@ ESP32 documentation is organized as:
 
 Key sections to look for: "IO MUX and GPIO Matrix", "Register Summary" tables at the end of each peripheral chapter.
 
+## RTOS
+
+This project runs on **FreeRTOS**. All application code executes inside FreeRTOS tasks.
 
 ### Core Concepts
 

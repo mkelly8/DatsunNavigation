@@ -5,7 +5,9 @@
   Application orchestrator — FreeRTOS task architecture.
 
   Task overview:
-    GNSS   (priority 5, core 1) — polls UART at GNSS_TICK_MS, copies fix under mutex
+    GNSS   (priority 5, core 1) — calls gnss.tick() which blocks on getPVT()
+                                   (~1 s per iteration at 1 Hz GNSS rate).
+                                   No vTaskDelayUntil — the module paces this task.
     UI     (priority 3, core 1) — snapshots fix under mutex, renders at UI_TICK_MS
     Health (priority 1, core 1) — snapshots state under mutex, logs at HEALTH_TICK_MS
 
@@ -82,20 +84,21 @@ void App::healthTask(void* param)
 
 void App::gnssTaskBody()
 {
-    // vTaskDelayUntil gives precise periodic wakeups unaffected by
-    // execution time, unlike vTaskDelay which restarts the timer each cycle.
-    TickType_t lastWake = xTaskGetTickCount();
-
+    // No vTaskDelayUntil here — gnss.tick() calls getPVT() which blocks
+    // internally until the module delivers a fresh NAV-PVT packet (~1 s at 1 Hz).
     while (true)
     {
-        gnss.tick(millis());
+        const uint32_t now = millis();
+        gnss.tick(now);
 
-        // Copy new fix into shared state
         xSemaphoreTake(fixMutex, portMAX_DELAY);
-        fix = gnss.getFix();
+        const GnssFix newFix = gnss.getFix();
+        if (newFix.lastUpdateMs != fix.lastUpdateMs)
+        {
+            diagnostics.pvtPackets++;
+        }
+        fix = newFix;
         xSemaphoreGive(fixMutex);
-
-        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(GNSS_TICK_MS));
     }
 }
 
@@ -118,7 +121,6 @@ void App::uiTaskBody()
         const ScreenId screen = ui.getActiveScreen();
         display.render(screen, localFix, localDiag, millis());
 
-        // Increment frame counter back under mutex
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         diagnostics.uiFrames++;
         xSemaphoreGive(fixMutex);
@@ -142,12 +144,11 @@ void App::healthTaskBody()
 
         // Structured output — parseable by edesto / read_serial.py
         Serial.print("[STATUS]");
-        Serial.print(" screen=");    Serial.print((int)ui.getActiveScreen());
-        Serial.print(" fix=");       Serial.print(localFix.valid ? "Y" : "N");
-        Serial.print(" sats=");      Serial.print(localFix.satellites);
-        Serial.print(" uartBytes="); Serial.print(localDiag.uartBytes);
-        Serial.print(" parsed=");    Serial.print(localDiag.sentencesParsed);
-        Serial.print(" frames=");    Serial.println(localDiag.uiFrames);
+        Serial.print(" gnssOk=");  Serial.print(gnss.isDeviceFound() ? "Y" : "N");
+        Serial.print(" fix=");     Serial.print(localFix.valid ? "Y" : "N");
+        Serial.print(" sats=");    Serial.print(localFix.satellites);
+        Serial.print(" pvt=");     Serial.print(localDiag.pvtPackets);
+        Serial.print(" frames=");  Serial.println(localDiag.uiFrames);
 
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(HEALTH_TICK_MS));
     }
