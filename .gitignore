@@ -1,0 +1,27 @@
+# edesto debug tool state
+.edesto/
+
+# arduino-cli build output
+build/
+/ESP32_Navigation/build/
+
+# TFT_eSPI user config (machine-specific pin/driver settings)
+ESP32_Navigation/User_Setup.h
+ESP32_Navigation/User_Setup_Select.h
+
+# Python serial scripts (scratch/debug, not source)
+read_serial.py
+send_command.py
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+*~

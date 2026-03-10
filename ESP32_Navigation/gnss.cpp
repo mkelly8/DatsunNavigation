@@ -16,12 +16,8 @@
 */
 
 #include <Arduino.h>
+#include "config.h"
 #include "gnss_parser_nmea.h"
-
-// TODO: Move these INTO config.h !!
-static const int GNSS_RX_PIN = 18;
-static const int GNSS_TX_PIN = 17;
-static const uint32_t GNSS_BAUD = 9600;
 
 Gnss::Gnss()
     : lineIndex(0)

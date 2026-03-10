@@ -4,9 +4,8 @@
   Project entry point.
 
   Responsibilities:
-  - Initialize system (setup)
-  - Call application scheduler (loop)
-  - Contain no business logic
+  - Call app.begin() which initializes modules and spawns FreeRTOS tasks
+  - Suspend the Arduino loop task — all work happens in named tasks
 
   All system behavior is delegated to the App module.
 */
@@ -22,5 +21,7 @@ void setup()
 
 void loop()
 {
-    app.tick(millis());
+    // All work is done in FreeRTOS tasks created by app.begin().
+    // Suspend this task indefinitely to avoid wasting CPU.
+    vTaskDelay(portMAX_DELAY);
 }

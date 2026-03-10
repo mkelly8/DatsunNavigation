@@ -2,92 +2,153 @@
 /*
   File: app.cpp
   ----------------------------------------------------
-  Application orchestrator implementation.
+  Application orchestrator — FreeRTOS task architecture.
 
-  Handles:
-  - Module initialization
-  - Periodic task execution
-  - System health checks
+  Task overview:
+    GNSS   (priority 5, core 1) — polls UART at GNSS_TICK_MS, copies fix under mutex
+    UI     (priority 3, core 1) — snapshots fix under mutex, renders at UI_TICK_MS
+    Health (priority 1, core 1) — snapshots state under mutex, logs at HEALTH_TICK_MS
+
+  Shared state access pattern:
+    1. Take fixMutex
+    2. Copy shared struct to a local variable (fast — just a memcpy)
+    3. Release fixMutex
+    4. Work with the local copy (rendering, printing, etc.)
+  This keeps the mutex held for microseconds, not frame-render time.
 */
 
 #include <Arduino.h>
+#include "config.h"
+
+// ---------------------------------------------------------------
+// Construction
+// ---------------------------------------------------------------
 
 App::App()
-    : lastGnssTickMs(0),
-      lastUiTickMs(0),
-      lastHealthTickMs(0)
+    : fix{},
+      diagnostics{},
+      fixMutex(nullptr),
+      gnssTaskHandle(nullptr),
+      uiTaskHandle(nullptr),
+      healthTaskHandle(nullptr)
 {
 }
 
+// ---------------------------------------------------------------
+// begin() — called once from setup()
+// ---------------------------------------------------------------
+
 void App::begin()
 {
-    // Serial for bring-up logging (fine for skeleton phase).
     Serial.begin(115200);
-    delay(300);
+    delay(300); // Allow USB-serial to enumerate before first print
 
-    // Initialize modules (currently stubs).
+    fixMutex = xSemaphoreCreateMutex();
+
     gnss.begin();
     display.begin();
     ui.begin();
 
-    // Initialize timestamps.
-    const uint32_t now = millis();
-    lastGnssTickMs = now;
-    lastUiTickMs = now;
-    lastHealthTickMs = now;
+    xTaskCreatePinnedToCore(gnssTask,   "GNSS",   TASK_STACK_GNSS,   this, TASK_PRIORITY_GNSS,   &gnssTaskHandle,   CORE_GNSS);
+    xTaskCreatePinnedToCore(uiTask,     "UI",     TASK_STACK_UI,     this, TASK_PRIORITY_UI,     &uiTaskHandle,     CORE_UI);
+    xTaskCreatePinnedToCore(healthTask, "Health", TASK_STACK_HEALTH, this, TASK_PRIORITY_HEALTH, &healthTaskHandle, CORE_HEALTH);
 
-    Serial.println("App begin: skeleton running (GNSS + Display + UI initialized).");
+    // Signal to any serial listener that the device is ready
+    Serial.println("[READY]");
 }
 
-void App::tick(uint32_t nowMs)
+// ---------------------------------------------------------------
+// Static task entry points
+// ---------------------------------------------------------------
+
+void App::gnssTask(void* param)
 {
-    tickGnss(nowMs);
-    tickUi(nowMs);
-    tickHealth(nowMs);
+    static_cast<App*>(param)->gnssTaskBody();
 }
 
-void App::tickGnss(uint32_t nowMs)
+void App::uiTask(void* param)
 {
-    // Run frequently (placeholder schedule: every 5 ms)
-    if (nowMs - lastGnssTickMs < 5) return;
-    lastGnssTickMs = nowMs;
-
-    gnss.tick(nowMs);
-    fix = gnss.getFix(); // snapshot
+    static_cast<App*>(param)->uiTaskBody();
 }
 
-void App::tickUi(uint32_t nowMs)
+void App::healthTask(void* param)
 {
-    // Frame limit (placeholder: 20 FPS)
-    if (nowMs - lastUiTickMs < 50) return;
-    lastUiTickMs = nowMs;
-
-    // Update UI state machine (buttons later).
-    ui.tick(nowMs);
-
-    // For now, always render; later use ui.consumeRedrawRequested().
-    const ScreenId screen = ui.getActiveScreen();
-    display.render(screen, fix, diagnostics, nowMs);
-
-    diagnostics.uiFrames++;
+    static_cast<App*>(param)->healthTaskBody();
 }
 
-void App::tickHealth(uint32_t nowMs)
-{
-    // Heartbeat every 2 seconds
-    if (nowMs - lastHealthTickMs < 2000) return;
-    lastHealthTickMs = nowMs;
+// ---------------------------------------------------------------
+// Task bodies
+// ---------------------------------------------------------------
 
-    Serial.print("Heartbeat | screen=");
-    Serial.print((int)ui.getActiveScreen());
-    Serial.print(" validFix=");
-    Serial.print(fix.valid ? "Y" : "N");
-    Serial.print(" sats=");
-    Serial.print(fix.satellites);
-    Serial.print(" uartBytes=");
-    Serial.print(diagnostics.uartBytes);
-    Serial.print(" parsed=");
-    Serial.print(diagnostics.sentencesParsed);
-    Serial.print(" uiFrames=");
-    Serial.println(diagnostics.uiFrames);
+void App::gnssTaskBody()
+{
+    // vTaskDelayUntil gives precise periodic wakeups unaffected by
+    // execution time, unlike vTaskDelay which restarts the timer each cycle.
+    TickType_t lastWake = xTaskGetTickCount();
+
+    while (true)
+    {
+        gnss.tick(millis());
+
+        // Copy new fix into shared state
+        xSemaphoreTake(fixMutex, portMAX_DELAY);
+        fix = gnss.getFix();
+        xSemaphoreGive(fixMutex);
+
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(GNSS_TICK_MS));
+    }
+}
+
+void App::uiTaskBody()
+{
+    TickType_t lastWake = xTaskGetTickCount();
+
+    while (true)
+    {
+        ui.tick(millis());
+
+        // Snapshot shared state — hold mutex only for the copy, not the render
+        GnssFix     localFix;
+        Diagnostics localDiag;
+        xSemaphoreTake(fixMutex, portMAX_DELAY);
+        localFix  = fix;
+        localDiag = diagnostics;
+        xSemaphoreGive(fixMutex);
+
+        const ScreenId screen = ui.getActiveScreen();
+        display.render(screen, localFix, localDiag, millis());
+
+        // Increment frame counter back under mutex
+        xSemaphoreTake(fixMutex, portMAX_DELAY);
+        diagnostics.uiFrames++;
+        xSemaphoreGive(fixMutex);
+
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(UI_TICK_MS));
+    }
+}
+
+void App::healthTaskBody()
+{
+    TickType_t lastWake = xTaskGetTickCount();
+
+    while (true)
+    {
+        GnssFix     localFix;
+        Diagnostics localDiag;
+        xSemaphoreTake(fixMutex, portMAX_DELAY);
+        localFix  = fix;
+        localDiag = diagnostics;
+        xSemaphoreGive(fixMutex);
+
+        // Structured output — parseable by edesto / read_serial.py
+        Serial.print("[STATUS]");
+        Serial.print(" screen=");    Serial.print((int)ui.getActiveScreen());
+        Serial.print(" fix=");       Serial.print(localFix.valid ? "Y" : "N");
+        Serial.print(" sats=");      Serial.print(localFix.satellites);
+        Serial.print(" uartBytes="); Serial.print(localDiag.uartBytes);
+        Serial.print(" parsed=");    Serial.print(localDiag.sentencesParsed);
+        Serial.print(" frames=");    Serial.println(localDiag.uiFrames);
+
+        vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(HEALTH_TICK_MS));
+    }
 }

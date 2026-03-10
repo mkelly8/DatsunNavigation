@@ -5,15 +5,22 @@
   ----------------------------------------------------
   Application orchestrator interface.
 
-  Responsibilities:
-  - Initialize subsystems
-  - Coordinate module updates
-  - Manage system scheduling
+  Architecture:
+  - app.begin() initializes all modules and spawns three FreeRTOS tasks
+  - Each task owns its timing via vTaskDelayUntil (precise periodic wakeup)
+  - Shared state (GnssFix, Diagnostics) is protected by fixMutex
+  - Tasks never block each other for more than a memcpy
 
-  Acts as system "brain".
+  Tasks:
+    GNSS   — polls Serial1, assembles NMEA lines, updates shared fix
+    UI     — renders display at ~20 FPS using a local snapshot of fix
+    Health — prints a structured [STATUS] heartbeat every 2 seconds
 */
 
 #include <stdint.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
 #include "types.h"
 #include "gnss.h"
 #include "display.h"
@@ -24,28 +31,36 @@ class App
 public:
     App();
 
+    // Initializes modules, creates tasks, prints [READY].
     void begin();
-    void tick(uint32_t nowMs);
 
 private:
     // Modules
-    Gnss gnss;
+    Gnss    gnss;
     Display display;
-    UI ui;
+    UI      ui;
 
-    // Shared state
-    GnssFix fix;
+    // Shared state — always access under fixMutex
+    GnssFix     fix;
     Diagnostics diagnostics;
 
-    // Timing control
-    uint32_t lastGnssTickMs;
-    uint32_t lastUiTickMs;
-    uint32_t lastHealthTickMs;
+    SemaphoreHandle_t fixMutex;
 
-    // Internal helpers
-    void tickGnss(uint32_t nowMs);
-    void tickUi(uint32_t nowMs);
-    void tickHealth(uint32_t nowMs);
+    // Task handles (kept for future suspend/resume or watchdog checks)
+    TaskHandle_t gnssTaskHandle;
+    TaskHandle_t uiTaskHandle;
+    TaskHandle_t healthTaskHandle;
+
+    // Static entry points — FreeRTOS requires a plain function pointer.
+    // Each casts param back to App* and calls the corresponding body.
+    static void gnssTask  (void* param);
+    static void uiTask    (void* param);
+    static void healthTask(void* param);
+
+    // Task bodies (infinite loops — never return)
+    void gnssTaskBody();
+    void uiTaskBody();
+    void healthTaskBody();
 };
 
 #endif
