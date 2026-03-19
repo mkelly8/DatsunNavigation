@@ -3,14 +3,12 @@
 /*
   File: gnss_parser_nmea.h
   ----------------------------------------------------
-  NMEA sentence parser interface.
+  DEPRECATED — not used by the active codebase.
 
-  Responsibilities:
-  - Validate NMEA checksum
-  - Identify supported sentence types (GGA/RMC)
-  - Parse supported fields into GnssFix
-
-  Pure parsing logic (no UART, no display).
+  The GNSS driver (gnss.cpp) now uses the SparkFun u-blox library
+  with UBX-NAV-PVT over I2C. NMEA parsing over Serial1 is no longer
+  needed. This file and its companion gnss_parser_nmea.cpp are kept
+  for reference only and must not be included in new code.
 */
 
 #include <stdint.h>

@@ -4,7 +4,7 @@
 #include "map_types.h"
 
 typedef struct {
-    int dummy;
+    uint32_t point_count;
 } MapIndex;
 
 void mapIndex_init(MapIndex* index);

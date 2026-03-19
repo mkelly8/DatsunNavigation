@@ -7,12 +7,13 @@
 
   Architecture:
   - app.begin() initializes all modules and spawns three FreeRTOS tasks
-  - Each task owns its timing via vTaskDelayUntil (precise periodic wakeup)
+  - UI and Health tasks own their timing via vTaskDelayUntil (precise periodic wakeup)
+  - GNSS task is paced by getPVT() blocking internally (~1 s at 1 Hz), not vTaskDelayUntil
   - Shared state (GnssFix, Diagnostics) is protected by fixMutex
   - Tasks never block each other for more than a memcpy
 
   Tasks:
-    GNSS   — polls Serial1, assembles NMEA lines, updates shared fix
+    GNSS   — calls gnss.tick() which blocks on UBX-NAV-PVT over I2C; updates shared fix
     UI     — renders display at ~20 FPS using a local snapshot of fix
     Health — prints a structured [STATUS] heartbeat every 2 seconds
 */

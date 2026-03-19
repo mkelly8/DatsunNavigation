@@ -27,10 +27,9 @@ void Display::render(ScreenId screen,
                      const Diagnostics& diag,
                      uint32_t nowMs)
 {
-    (void)nowMs;
+    lastRenderMs = nowMs;
 
-    // Placeholder: later we will use lastRenderMs + partial redraw decisions.
-    // For now, dispatch to screen-specific functions (which are stubs).
+    // Dispatch to screen-specific functions.
     switch (screen)
     {
         case ScreenId::Boot:

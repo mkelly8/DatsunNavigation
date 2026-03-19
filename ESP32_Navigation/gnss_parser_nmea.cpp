@@ -2,12 +2,13 @@
 /*
   File: gnss_parser_nmea.cpp
   ----------------------------------------------------
-  Implementation of NMEA parsing logic.
+  DEPRECATED — not used by the active codebase.
+  See gnss_parser_nmea.h for details.
 
-  Current state:
-  - Checksum validation implemented
-  - Sentence type detection implemented
-  - Field parsing is stubbed (returns false) for now
+  Implementation state (kept for reference):
+  - Checksum validation: implemented
+  - Sentence type detection: implemented
+  - GGA/RMC field extraction: not implemented (returns false)
 */
 
 #include <ctype.h>
