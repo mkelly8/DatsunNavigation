@@ -7,12 +7,32 @@
   ----------------------------------------------------
   Curvature calculations for route analysis.
 
-  curvature_computeRadius: uses the circumscribed-circle (Menger curvature)
-  formula on three consecutive route points expressed in local Cartesian metres.
+  Uses a flat-earth approximation to convert lat/lon degrees to metres.
+  This is valid because consecutive route points are only ~10 m apart.
 
-  curvature_computeAy: returns lateral acceleration v²/r given speed (m/s)
+  curvature_computeRadius: circumscribed-circle (Menger curvature) radius
+  from three consecutive route points.
+
+  curvature_computeAy: lateral acceleration v²/r given speed (m/s)
   and radius (m).
+
+  NOTE: route_data.h only stores geo coordinates; local.x/y are not
+  populated, so all distance calculations use geo lat/lon converted
+  to metres on the fly.
 */
+
+// Flat-earth conversion constants
+#define DEG_TO_RAD  (3.14159265358979323846 / 180.0)
+#define METRES_PER_DEG_LAT  111320.0   // ~constant globally
+
+static void geoToMetres(const GeoCoordinate* from,
+                        const GeoCoordinate* to,
+                        double* dx, double* dy)
+{
+    const double midlat = (from->latitude + to->latitude) * 0.5 * DEG_TO_RAD;
+    *dx = (to->longitude - from->longitude) * cos(midlat) * METRES_PER_DEG_LAT;
+    *dy = (to->latitude  - from->latitude)  * METRES_PER_DEG_LAT;
+}
 
 double curvature_computeRadius(int index)
 {
@@ -29,18 +49,18 @@ double curvature_computeRadius(int index)
 
     if (!p0 || !p1 || !p2) return 1e9;
 
-    // Local Cartesian coordinates (metres)
-    const double ax = p0->local.x, ay = p0->local.y;
-    const double bx = p1->local.x, by = p1->local.y;
-    const double cx = p2->local.x, cy = p2->local.y;
+    // Convert to metres relative to p0
+    double bx, by, cx, cy;
+    geoToMetres(&p0->geo, &p1->geo, &bx, &by);
+    geoToMetres(&p0->geo, &p2->geo, &cx, &cy);
 
-    // Triangle area via cross product
-    const double area = fabs((bx - ax) * (cy - ay) - (cx - ax) * (by - ay)) * 0.5;
+    // Triangle area via cross product (p0 is origin)
+    const double area = fabs(bx * cy - cx * by) * 0.5;
     if (area < 1e-9) return 1e9; // collinear — effectively infinite radius
 
-    const double ab = sqrt((bx - ax)*(bx - ax) + (by - ay)*(by - ay));
-    const double bc = sqrt((cx - bx)*(cx - bx) + (cy - by)*(cy - by));
-    const double ca = sqrt((ax - cx)*(ax - cx) + (ay - cy)*(ay - cy));
+    const double ab = sqrt(bx*bx + by*by);
+    const double bc = sqrt((cx-bx)*(cx-bx) + (cy-by)*(cy-by));
+    const double ca = sqrt(cx*cx + cy*cy);
 
     // Circumradius R = (a * b * c) / (4 * area)
     return (ab * bc * ca) / (4.0 * area);

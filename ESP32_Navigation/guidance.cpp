@@ -9,12 +9,19 @@
   ----------------------------------------------------
   Guidance computation — bearing from current to next route point.
 
-  Uses local Cartesian coordinates (metres) already stored in each
-  RoutePoint to compute the bearing angle. atan2(east, north) gives
-  a compass bearing where 0° = north, 90° = east.
+  Uses the forward azimuth (great-circle bearing) formula from
+  current geo position to the next route point:
+
+    bearing = atan2(sin(Δlon)·cos(lat2),
+                    cos(lat1)·sin(lat2) − sin(lat1)·cos(lat2)·cos(Δlon))
+
+  NOTE: route_data.h only stores geo coordinates; local.x/y are not
+  populated, so bearing is computed from lat/lon directly.
 
   Output is printed over Serial until a display layer is available.
 */
+
+#define DEG_TO_RAD  (3.14159265358979323846 / 180.0)
 
 void guidance_compute(int current_index)
 {
@@ -25,10 +32,16 @@ void guidance_compute(int current_index)
     const RoutePoint* next    = mapStore_getPointPtr((uint32_t)next_index);
     if (!current || !next) return;
 
-    const double dx = next->local.x - current->local.x; // east delta [m]
-    const double dy = next->local.y - current->local.y; // north delta [m]
+    const double lat1 = current->geo.latitude  * DEG_TO_RAD;
+    const double lon1 = current->geo.longitude * DEG_TO_RAD;
+    const double lat2 = next->geo.latitude     * DEG_TO_RAD;
+    const double lon2 = next->geo.longitude    * DEG_TO_RAD;
+    const double dlon = lon2 - lon1;
 
-    double bearing_deg = atan2(dx, dy) * (180.0 / M_PI);
+    const double y = sin(dlon) * cos(lat2);
+    const double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon);
+
+    double bearing_deg = atan2(y, x) * (1.0 / DEG_TO_RAD);
     if (bearing_deg < 0.0) bearing_deg += 360.0;
 
     Serial.print("[GUIDANCE] bearing=");
