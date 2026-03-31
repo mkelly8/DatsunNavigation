@@ -27,6 +27,7 @@
 #include "display.h"
 #include "ui.h"
 #include "nav_state.h"
+#include "curve_scanner.h"
 
 class App
 {
@@ -46,6 +47,7 @@ private:
     GnssFix     fix;
     Diagnostics diagnostics;
     NavState    navState;
+    CurveScan   curveScan;
 
     SemaphoreHandle_t fixMutex;
 

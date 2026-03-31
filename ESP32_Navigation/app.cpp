@@ -24,6 +24,7 @@
 #include "nav_state.h"
 #include "guidance.h"
 #include "curvature.h"
+#include "curve_scanner.h"
 
 // ---------------------------------------------------------------
 // Construction
@@ -33,6 +34,7 @@ App::App()
     : fix{},
       diagnostics{},
       navState{},
+      curveScan{},
       fixMutex(nullptr),
       gnssTaskHandle(nullptr),
       uiTaskHandle(nullptr),
@@ -90,7 +92,8 @@ void App::gnssTaskBody()
 {
     // No vTaskDelayUntil here — gnss.tick() calls getPVT() which blocks
     // internally until the module delivers a fresh NAV-PVT packet (~1 s at 1 Hz).
-    NavState localNav = {};
+    NavState  localNav       = {};
+    CurveScan localCurveScan = {};
 
     while (true)
     {
@@ -110,16 +113,20 @@ void App::gnssTaskBody()
                             (double)newFix.speed_mps);
 
             guidance_compute(localNav.current_index);
+
+            // Scan the next 3 km of route for upcoming curves
+            localCurveScan = curveScanner_scan(localNav.current_index);
         }
 
-        // Publish updated fix and nav state under mutex (fast copy only)
+        // Publish updated fix, nav state, and curve scan under mutex (fast copy only)
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         if (newFix.lastUpdateMs != fix.lastUpdateMs)
         {
             diagnostics.pvtPackets++;
         }
-        fix      = newFix;
-        navState = localNav;
+        fix       = newFix;
+        navState  = localNav;
+        curveScan = localCurveScan;
         xSemaphoreGive(fixMutex);
     }
 }
@@ -163,13 +170,15 @@ void App::healthTaskBody()
         GnssFix     localFix;
         Diagnostics localDiag;
         NavState    localNav;
+        CurveScan   localCurve;
         xSemaphoreTake(fixMutex, portMAX_DELAY);
-        localFix  = fix;
-        localDiag = diagnostics;
-        localNav  = navState;
+        localFix   = fix;
+        localDiag  = diagnostics;
+        localNav   = navState;
+        localCurve = curveScan;
         xSemaphoreGive(fixMutex);
 
-        // Compute curvature for the current route index (reads ROM, no mutex needed)
+        // Compute curvature at current position (reads ROM, no mutex needed)
         const double radius = curvature_computeRadius(localNav.current_index);
         const double ay     = curvature_computeAy((double)localFix.speed_mps, radius);
 
@@ -182,7 +191,24 @@ void App::healthTaskBody()
         Serial.print(" frames=");  Serial.print(localDiag.uiFrames);
         Serial.print(" idx=");     Serial.print(localNav.current_index);
         Serial.print(" r=");       Serial.print(radius, 1);
-        Serial.print(" ay=");      Serial.println(ay, 3);
+        Serial.print(" ay=");      Serial.print(ay, 3);
+
+        // Upcoming curve look-ahead
+        if (localCurve.found)
+        {
+            const char* dir = (localCurve.segment.direction == TURN_LEFT)  ? "L"
+                            : (localCurve.segment.direction == TURN_RIGHT) ? "R"
+                            :                                                "S";
+            Serial.print(" curve=");  Serial.print(dir);
+            Serial.print(" cdist=");  Serial.print(localCurve.distance_m, 0);
+            Serial.print("m cminr="); Serial.print(localCurve.segment.min_radius_m, 1);
+            Serial.print("m cidx=");  Serial.print(localCurve.segment.entry_index);
+        }
+        else
+        {
+            Serial.print(" curve=N");
+        }
+        Serial.println();
 
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(HEALTH_TICK_MS));
     }
