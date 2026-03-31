@@ -116,6 +116,16 @@ void App::gnssTaskBody()
 
             // Scan the next 3 km of route for upcoming curves
             localCurveScan = curveScanner_scan(localNav.current_index);
+
+            // Compute time to curve at current speed (avoid divide-by-zero when stopped)
+            if (localCurveScan.found && newFix.speed_mps > 0.5f)
+            {
+                localCurveScan.time_to_curve_s = localCurveScan.distance_m / newFix.speed_mps;
+            }
+            else
+            {
+                localCurveScan.time_to_curve_s = 0.0f;
+            }
         }
 
         // Publish updated fix, nav state, and curve scan under mutex (fast copy only)
@@ -137,21 +147,24 @@ void App::uiTaskBody()
 
     while (true)
     {
-        ui.tick(millis());
-
-        // Snapshot shared state — hold mutex only for the copy, not the render
+        // Snapshot all shared state — hold mutex only for the copy, not the render
         GnssFix     localFix;
         Diagnostics localDiag;
         NavState    localNav;
+        CurveScan   localCurve;
         xSemaphoreTake(fixMutex, portMAX_DELAY);
-        localFix  = fix;
-        localDiag = diagnostics;
-        localNav  = navState;
+        localFix   = fix;
+        localDiag  = diagnostics;
+        localNav   = navState;
+        localCurve = curveScan;
         xSemaphoreGive(fixMutex);
-        (void)localNav; // available for display rendering when TFT is integrated
+
+        // Drive the UI state machine and render
+        ui.tick(millis());
+        ui.notifyFix(localFix.valid);
 
         const ScreenId screen = ui.getActiveScreen();
-        display.render(screen, localFix, localDiag, millis());
+        display.render(screen, localFix, localDiag, localNav, localCurve, millis());
 
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         diagnostics.uiFrames++;
@@ -201,8 +214,14 @@ void App::healthTaskBody()
                             :                                                "S";
             Serial.print(" curve=");  Serial.print(dir);
             Serial.print(" cdist=");  Serial.print(localCurve.distance_m, 0);
-            Serial.print("m cminr="); Serial.print(localCurve.segment.min_radius_m, 1);
-            Serial.print("m cidx=");  Serial.print(localCurve.segment.entry_index);
+            Serial.print("m");
+            if (localCurve.time_to_curve_s > 0.0f)
+            {
+                Serial.print(" ctime="); Serial.print(localCurve.time_to_curve_s, 1);
+                Serial.print("s");
+            }
+            Serial.print(" cminr="); Serial.print(localCurve.segment.min_radius_m, 1);
+            Serial.print("m cidx="); Serial.print(localCurve.segment.entry_index);
         }
         else
         {

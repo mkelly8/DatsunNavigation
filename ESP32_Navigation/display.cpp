@@ -4,8 +4,9 @@
   ----------------------------------------------------
   Display implementation.
 
-  Currently a stub for minimum compile.
-  TFT_eSPI rendering will be added later.
+  Dispatches to screen-specific functions which currently emit
+  structured Serial output.  When TFT_eSPI is integrated, the
+  screen functions will draw to hardware — no changes needed here.
 */
 
 #include <Arduino.h>
@@ -18,34 +19,36 @@ Display::Display()
 
 void Display::begin()
 {
-    // Placeholder: initialize TFT later.
+    // Placeholder: initialize TFT_eSPI hardware here when ready.
+    // e.g. tft.init(); tft.setRotation(1); ledcAttach(...);
     lastRenderMs = millis();
 }
 
-void Display::render(ScreenId screen,
-                     const GnssFix& fix,
+void Display::render(ScreenId           screen,
+                     const GnssFix&     fix,
                      const Diagnostics& diag,
-                     uint32_t nowMs)
+                     const NavState&    nav,
+                     const CurveScan&   curve,
+                     uint32_t           nowMs)
 {
     lastRenderMs = nowMs;
 
-    // Dispatch to screen-specific functions.
     switch (screen)
     {
         case ScreenId::Boot:
-            drawBootScreen(fix, diag);
+            drawBootScreen(fix, diag, nav, curve);
             break;
 
         case ScreenId::Status:
-            drawStatusScreen(fix, diag);
+            drawStatusScreen(fix, diag, nav, curve);
             break;
 
         case ScreenId::Navigation:
-            drawNavigationScreen(fix, diag);
+            drawNavigationScreen(fix, diag, nav, curve);
             break;
 
         default:
-            drawStatusScreen(fix, diag);
+            drawStatusScreen(fix, diag, nav, curve);
             break;
     }
 }

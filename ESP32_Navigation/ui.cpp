@@ -4,7 +4,10 @@
   ----------------------------------------------------
   UI state machine implementation.
 
-  Currently a stub for minimum compile.
+  Screen transition logic:
+    Boot   -> Status     : immediately on begin()
+    Status -> Navigation : when GNSS fix becomes valid (notifyFix(true))
+    Navigation -> Status : when GNSS fix is lost (notifyFix(false))
 */
 
 UI::UI()
@@ -15,14 +18,33 @@ UI::UI()
 
 void UI::begin()
 {
-    // Placeholder: initialize UI state, inputs, etc.
-    activeScreen = ScreenId::Status;
+    activeScreen    = ScreenId::Status;
     redrawRequested = true;
 }
 
 void UI::tick(uint32_t /*nowMs*/)
 {
-    // Placeholder: later handle button inputs / screen switching.
+    // Reserved for button input handling and timed transitions.
+}
+
+void UI::notifyFix(bool fixValid)
+{
+    ScreenId next = activeScreen;
+
+    if (fixValid && activeScreen == ScreenId::Status)
+    {
+        next = ScreenId::Navigation;
+    }
+    else if (!fixValid && activeScreen == ScreenId::Navigation)
+    {
+        next = ScreenId::Status;
+    }
+
+    if (next != activeScreen)
+    {
+        activeScreen    = next;
+        redrawRequested = true;
+    }
 }
 
 ScreenId UI::getActiveScreen() const

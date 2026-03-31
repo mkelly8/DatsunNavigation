@@ -31,9 +31,10 @@
 
 typedef struct
 {
-    bool         found;       // true if a curve was detected ahead
-    CurveSegment segment;     // populated only when found == true
-    float        distance_m;  // metres from current_index to segment.entry_index
+    bool         found;           // true if a curve was detected ahead
+    CurveSegment segment;         // populated only when found == true
+    float        distance_m;      // metres from current_index to segment.entry_index
+    float        time_to_curve_s; // seconds until curve entry at current speed (0 if speed == 0)
 } CurveScan;
 
 

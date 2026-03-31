@@ -9,17 +9,23 @@
   - Declare screen rendering functions
   - Keep layout decisions separated from system logic
 
-  Currently a stub for minimum compile.
+  Each function receives the full navigation context it needs so
+  that when TFT_eSPI is integrated, all data is already available
+  without changing any call sites.
 */
 
 #include <stdint.h>
 #include "types.h"
+#include "nav_state.h"
+#include "curve_scanner.h"
 
-// NOTE: We intentionally avoid including TFT_eSPI here for now.
-// Later these functions will accept a Display/TFT reference.
+void drawBootScreen      (const GnssFix& fix, const Diagnostics& diag,
+                          const NavState& nav, const CurveScan& curve);
 
-void drawBootScreen(const GnssFix& fix, const Diagnostics& diag);
-void drawStatusScreen(const GnssFix& fix, const Diagnostics& diag);
-void drawNavigationScreen(const GnssFix& fix, const Diagnostics& diag);
+void drawStatusScreen    (const GnssFix& fix, const Diagnostics& diag,
+                          const NavState& nav, const CurveScan& curve);
+
+void drawNavigationScreen(const GnssFix& fix, const Diagnostics& diag,
+                          const NavState& nav, const CurveScan& curve);
 
 #endif

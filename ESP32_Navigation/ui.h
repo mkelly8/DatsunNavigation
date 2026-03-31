@@ -24,6 +24,10 @@ public:
     void begin();
     void tick(uint32_t nowMs);
 
+    // Called each UI frame with the current fix validity so the state
+    // machine can transition Boot -> Status -> Navigation automatically.
+    void notifyFix(bool fixValid);
+
     ScreenId getActiveScreen() const;
     bool consumeRedrawRequested();
 
