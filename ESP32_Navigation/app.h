@@ -26,6 +26,7 @@
 #include "gnss.h"
 #include "display.h"
 #include "ui.h"
+#include "nav_state.h"
 
 class App
 {
@@ -44,6 +45,7 @@ private:
     // Shared state — always access under fixMutex
     GnssFix     fix;
     Diagnostics diagnostics;
+    NavState    navState;
 
     SemaphoreHandle_t fixMutex;
 

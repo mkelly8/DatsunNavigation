@@ -21,6 +21,9 @@
 
 #include <Arduino.h>
 #include "config.h"
+#include "nav_state.h"
+#include "guidance.h"
+#include "curvature.h"
 
 // ---------------------------------------------------------------
 // Construction
@@ -29,6 +32,7 @@
 App::App()
     : fix{},
       diagnostics{},
+      navState{},
       fixMutex(nullptr),
       gnssTaskHandle(nullptr),
       uiTaskHandle(nullptr),
@@ -86,18 +90,36 @@ void App::gnssTaskBody()
 {
     // No vTaskDelayUntil here — gnss.tick() calls getPVT() which blocks
     // internally until the module delivers a fresh NAV-PVT packet (~1 s at 1 Hz).
+    NavState localNav = {};
+
     while (true)
     {
         const uint32_t now = millis();
         gnss.tick(now);
 
-        xSemaphoreTake(fixMutex, portMAX_DELAY);
         const GnssFix newFix = gnss.getFix();
+
+        // Run the full navigation pipeline outside the mutex — these are
+        // CPU-intensive but read-only on route data (flash), so they are
+        // safe to run here without holding fixMutex.
+        if (newFix.valid)
+        {
+            navState_update(&localNav,
+                            newFix.latitude,
+                            newFix.longitude,
+                            (double)newFix.speed_mps);
+
+            guidance_compute(localNav.current_index);
+        }
+
+        // Publish updated fix and nav state under mutex (fast copy only)
+        xSemaphoreTake(fixMutex, portMAX_DELAY);
         if (newFix.lastUpdateMs != fix.lastUpdateMs)
         {
             diagnostics.pvtPackets++;
         }
-        fix = newFix;
+        fix      = newFix;
+        navState = localNav;
         xSemaphoreGive(fixMutex);
     }
 }
@@ -113,10 +135,13 @@ void App::uiTaskBody()
         // Snapshot shared state — hold mutex only for the copy, not the render
         GnssFix     localFix;
         Diagnostics localDiag;
+        NavState    localNav;
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         localFix  = fix;
         localDiag = diagnostics;
+        localNav  = navState;
         xSemaphoreGive(fixMutex);
+        (void)localNav; // available for display rendering when TFT is integrated
 
         const ScreenId screen = ui.getActiveScreen();
         display.render(screen, localFix, localDiag, millis());
@@ -137,10 +162,16 @@ void App::healthTaskBody()
     {
         GnssFix     localFix;
         Diagnostics localDiag;
+        NavState    localNav;
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         localFix  = fix;
         localDiag = diagnostics;
+        localNav  = navState;
         xSemaphoreGive(fixMutex);
+
+        // Compute curvature for the current route index (reads ROM, no mutex needed)
+        const double radius = curvature_computeRadius(localNav.current_index);
+        const double ay     = curvature_computeAy((double)localFix.speed_mps, radius);
 
         // Structured output — parseable by edesto / read_serial.py
         Serial.print("[STATUS]");
@@ -148,7 +179,10 @@ void App::healthTaskBody()
         Serial.print(" fix=");     Serial.print(localFix.valid ? "Y" : "N");
         Serial.print(" sats=");    Serial.print(localFix.satellites);
         Serial.print(" pvt=");     Serial.print(localDiag.pvtPackets);
-        Serial.print(" frames=");  Serial.println(localDiag.uiFrames);
+        Serial.print(" frames=");  Serial.print(localDiag.uiFrames);
+        Serial.print(" idx=");     Serial.print(localNav.current_index);
+        Serial.print(" r=");       Serial.print(radius, 1);
+        Serial.print(" ay=");      Serial.println(ay, 3);
 
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS(HEALTH_TICK_MS));
     }

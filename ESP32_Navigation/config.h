@@ -32,7 +32,7 @@
 #define TASK_PRIORITY_HEALTH  1
 
 // ---- FreeRTOS task stack sizes (bytes) -----------------------
-#define TASK_STACK_GNSS    2048
+#define TASK_STACK_GNSS    4096  // Increased: nav pipeline (map-match + guidance) runs in this task
 #define TASK_STACK_UI      4096   // Extra headroom for future TFT rendering
 #define TASK_STACK_HEALTH  1024
 
