@@ -36,4 +36,4 @@ private:
     bool redrawRequested;
 };
 
-#endif
+#endif // UI_H

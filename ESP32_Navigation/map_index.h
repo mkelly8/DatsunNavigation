@@ -10,4 +10,4 @@ typedef struct {
 void mapIndex_init(MapIndex* index);
 int mapIndex_findNearest(MapIndex* index, double lat, double lon);
 
-#endif
+#endif // MAP_INDEX_H

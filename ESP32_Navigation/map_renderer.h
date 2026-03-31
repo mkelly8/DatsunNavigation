@@ -5,4 +5,4 @@
 
 void mapRenderer_draw(int current_index);
 
-#endif
+#endif // MAP_RENDERER_H

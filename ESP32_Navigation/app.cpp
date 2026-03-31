@@ -21,10 +21,7 @@
 
 #include <Arduino.h>
 #include "config.h"
-#include "nav_state.h"
-#include "guidance.h"
-#include "curvature.h"
-#include "curve_scanner.h"
+#include "curvature.h"    // curvature_computeRadius/Ay used in healthTaskBody
 
 // ---------------------------------------------------------------
 // Construction
@@ -92,9 +89,6 @@ void App::gnssTaskBody()
 {
     // No vTaskDelayUntil here — gnss.tick() calls getPVT() which blocks
     // internally until the module delivers a fresh NAV-PVT packet (~1 s at 1 Hz).
-    NavState  localNav       = {};
-    CurveScan localCurveScan = {};
-
     while (true)
     {
         const uint32_t now = millis();
@@ -102,41 +96,19 @@ void App::gnssTaskBody()
 
         const GnssFix newFix = gnss.getFix();
 
-        // Run the full navigation pipeline outside the mutex — these are
-        // CPU-intensive but read-only on route data (flash), so they are
-        // safe to run here without holding fixMutex.
-        if (newFix.valid)
-        {
-            navState_update(&localNav,
-                            newFix.latitude,
-                            newFix.longitude,
-                            (double)newFix.speed_mps);
+        // Run the full navigation pipeline outside the mutex — navigator_ reads
+        // only ROM route data, so it is safe without holding fixMutex.
+        navigator_.update(newFix);
 
-            guidance_compute(localNav.current_index);
-
-            // Scan the next 3 km of route for upcoming curves
-            localCurveScan = curveScanner_scan(localNav.current_index);
-
-            // Compute time to curve at current speed (avoid divide-by-zero when stopped)
-            if (localCurveScan.found && newFix.speed_mps > 0.5f)
-            {
-                localCurveScan.time_to_curve_s = localCurveScan.distance_m / newFix.speed_mps;
-            }
-            else
-            {
-                localCurveScan.time_to_curve_s = 0.0f;
-            }
-        }
-
-        // Publish updated fix, nav state, and curve scan under mutex (fast copy only)
+        // Publish updated state under mutex (fast copy only)
         xSemaphoreTake(fixMutex, portMAX_DELAY);
         if (newFix.lastUpdateMs != fix.lastUpdateMs)
         {
             diagnostics.pvtPackets++;
         }
         fix       = newFix;
-        navState  = localNav;
-        curveScan = localCurveScan;
+        navState  = navigator_.getNavState();
+        curveScan = navigator_.getCurveScan();
         xSemaphoreGive(fixMutex);
     }
 }

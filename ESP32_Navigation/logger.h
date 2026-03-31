@@ -26,4 +26,4 @@ void logger_setLevel(LogLevel level);
 // Emit a log line: "[LEVEL][tag] msg"
 void logger_log(LogLevel level, const char* tag, const char* msg);
 
-#endif
+#endif // LOGGER_H

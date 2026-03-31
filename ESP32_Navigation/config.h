@@ -26,13 +26,18 @@
 #define UI_TICK_MS      50      // Display frame period (~20 FPS)
 #define HEALTH_TICK_MS  2000    // Heartbeat interval
 
+// ---- Navigation pipeline -------------------------------------
+// Minimum ground speed (m/s) required before time-to-curve is computed.
+// Below this the vehicle is considered stationary; ETA is set to 0.
+#define NAV_MIN_SPEED_MPS_FOR_ETA  0.5f
+
 // ---- FreeRTOS task priorities (higher number = more urgent) --
 #define TASK_PRIORITY_GNSS    5
 #define TASK_PRIORITY_UI      3
 #define TASK_PRIORITY_HEALTH  1
 
 // ---- FreeRTOS task stack sizes (bytes) -----------------------
-#define TASK_STACK_GNSS    4096  // Increased: nav pipeline (map-match + guidance) runs in this task
+#define TASK_STACK_GNSS    4096  // Navigator pipeline (map-match + guidance + curve scan) runs here
 #define TASK_STACK_UI      4096   // Extra headroom for future TFT rendering
 #define TASK_STACK_HEALTH  1024
 
@@ -56,4 +61,4 @@
 #define TFT_BL_FREQ_HZ   5000
 #define TFT_BL_RES_BITS     8   // 0–255 duty cycle
 
-#endif
+#endif // CONFIG_H

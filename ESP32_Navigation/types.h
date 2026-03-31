@@ -60,4 +60,4 @@ enum class ScreenId
     Navigation
 };
 
-#endif
+#endif // TYPES_H

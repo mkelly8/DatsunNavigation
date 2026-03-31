@@ -55,4 +55,4 @@ typedef struct
 */
 CurveScan curveScanner_scan(int current_index);
 
-#endif
+#endif // CURVE_SCANNER_H

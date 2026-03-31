@@ -18,5 +18,10 @@ void navState_update(NavState* state, double lat, double lon, double speed)
     state->longitude = lon;
     state->speed     = speed;
 
-    state->current_index = mapMatcher_match(lat, lon);
+    const int matched = mapMatcher_match(lat, lon);
+    if (matched >= 0)
+    {
+        state->current_index = matched;
+    }
+    // matched == -1 means route not loaded; keep previous index.
 }

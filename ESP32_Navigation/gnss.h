@@ -45,4 +45,4 @@ private:
     bool           deviceFound;
 };
 
-#endif
+#endif // GNSS_H

@@ -19,4 +19,4 @@ void diagnostics_reset(Diagnostics* diag);
 // Print a structured [DIAG] line over Serial.
 void diagnostics_print(const Diagnostics* diag);
 
-#endif
+#endif // DIAGNOSTICS_H

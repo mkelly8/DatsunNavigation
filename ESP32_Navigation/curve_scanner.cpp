@@ -1,6 +1,7 @@
 #include "curve_scanner.h"
 #include "curvature.h"
 #include "map_store.h"
+#include "geo_math.h"
 #include <math.h>
 #include <string.h>
 /*
@@ -30,8 +31,7 @@
   as curvature.cpp (valid for ~10 m inter-point spacing).
 */
 
-#define CS_DEG_TO_RAD        (3.14159265358979323846 / 180.0)
-#define CS_METRES_PER_DEG_LAT 111320.0
+// Use shared constants from geo_math.h — no local copies needed.
 
 // ---- Private helpers -----------------------------------------
 
@@ -40,9 +40,9 @@ static void cs_geoToMetres(const GeoCoordinate* from,
                             const GeoCoordinate* to,
                             double* dx, double* dy)
 {
-    const double midlat = (from->latitude + to->latitude) * 0.5 * CS_DEG_TO_RAD;
-    *dx = (to->longitude - from->longitude) * cos(midlat) * CS_METRES_PER_DEG_LAT;
-    *dy = (to->latitude  - from->latitude)  * CS_METRES_PER_DEG_LAT;
+    const double midlat = (from->latitude + to->latitude) * 0.5 * GEO_DEG_TO_RAD;
+    *dx = (to->longitude - from->longitude) * cos(midlat) * GEO_METRES_PER_DEG_LAT;
+    *dy = (to->latitude  - from->latitude)  * GEO_METRES_PER_DEG_LAT;
 }
 
 /*
@@ -100,7 +100,7 @@ CurveScan curveScanner_scan(int current_index)
     // Run-tracking state
     bool   in_run    = false;
     int    run_start = 0;
-    double run_min_r = 1e9;
+    double run_min_r = GEO_STRAIGHT_RADIUS_M;
 
     for (int i = scan_start; i <= clamped_end; i++)
     {
@@ -144,7 +144,7 @@ CurveScan curveScanner_scan(int current_index)
 
                 // Run too short — noise, discard and keep scanning
                 in_run    = false;
-                run_min_r = 1e9;
+                run_min_r = GEO_STRAIGHT_RADIUS_M;
             }
         }
     }

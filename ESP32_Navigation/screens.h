@@ -28,4 +28,4 @@ void drawStatusScreen    (const GnssFix& fix, const Diagnostics& diag,
 void drawNavigationScreen(const GnssFix& fix, const Diagnostics& diag,
                           const NavState& nav, const CurveScan& curve);
 
-#endif
+#endif // SCREENS_H

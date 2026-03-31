@@ -12,6 +12,9 @@
   navigation scale — avoids the cost of a haversine per point).
 */
 
+// Initialise to largest possible double — any real distance will be smaller.
+static const double MAP_INDEX_INIT_DIST = 1.8e308;
+
 void mapIndex_init(MapIndex* index)
 {
     if (!index) return;
@@ -23,7 +26,7 @@ int mapIndex_findNearest(MapIndex* index, double lat, double lon)
     if (!index || index->point_count == 0) return -1;
 
     int    nearest  = 0;
-    double bestDist = 1e18;
+    double bestDist = MAP_INDEX_INIT_DIST;
 
     for (uint32_t i = 0; i < index->point_count; i++)
     {

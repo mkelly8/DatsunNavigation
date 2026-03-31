@@ -21,4 +21,4 @@ uint32_t          mapStore_getPointCount(void);
 bool              mapStore_getPoint(uint32_t index, RoutePoint* outPoint);
 const RoutePoint* mapStore_getPointPtr(uint32_t index);
 
-#endif
+#endif // MAP_STORE_H

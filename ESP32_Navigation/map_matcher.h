@@ -5,4 +5,4 @@
 
 int mapMatcher_match(double lat, double lon);
 
-#endif
+#endif // MAP_MATCHER_H

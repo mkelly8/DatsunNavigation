@@ -6,4 +6,4 @@
 double curvature_computeRadius(int index);
 double curvature_computeAy(double v, double r);
 
-#endif
+#endif // CURVATURE_H

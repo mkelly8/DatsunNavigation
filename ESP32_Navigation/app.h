@@ -26,8 +26,7 @@
 #include "gnss.h"
 #include "display.h"
 #include "ui.h"
-#include "nav_state.h"
-#include "curve_scanner.h"
+#include "navigator.h"
 
 class App
 {
@@ -39,9 +38,10 @@ public:
 
 private:
     // Modules
-    Gnss    gnss;
-    Display display;
-    UI      ui;
+    Gnss      gnss;
+    Display   display;
+    UI        ui;
+    Navigator navigator_;   // owns the nav pipeline; update() called from GNSS task only
 
     // Shared state — always access under fixMutex
     GnssFix     fix;
@@ -68,4 +68,4 @@ private:
     void healthTaskBody();
 };
 
-#endif
+#endif // APP_H

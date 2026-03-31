@@ -5,4 +5,4 @@
 
 void guidance_compute(int current_index);
 
-#endif
+#endif // GUIDANCE_H

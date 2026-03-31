@@ -83,4 +83,4 @@ typedef struct
 
 } CurveSegment;
 
-#endif
+#endif // MAP_TYPES_H

@@ -5,4 +5,4 @@
 
 int router_getNextPoint(int current_index);
 
-#endif
+#endif // ROUTER_H

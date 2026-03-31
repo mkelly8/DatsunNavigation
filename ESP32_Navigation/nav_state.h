@@ -12,4 +12,4 @@ typedef struct {
 
 void navState_update(NavState* state, double lat, double lon, double speed);
 
-#endif
+#endif // NAV_STATE_H

@@ -15,4 +15,4 @@
 // Returns true if (nowMs - lastUpdateMs) exceeds staleThresholdMs.
 bool isStale(uint32_t nowMs, uint32_t lastUpdateMs, uint32_t staleThresholdMs);
 
-#endif
+#endif // TIME_UTILS_H

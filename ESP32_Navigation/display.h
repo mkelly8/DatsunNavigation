@@ -38,4 +38,4 @@ private:
     uint32_t lastRenderMs;
 };
 
-#endif
+#endif // DISPLAY_H
