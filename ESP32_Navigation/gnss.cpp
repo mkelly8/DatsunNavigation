@@ -2,7 +2,8 @@
 /*
   File: gnss.cpp
   ----------------------------------------------------
-  GNSS driver — SparkFun u-blox GNSS v3, UBX over I2C (Qwiic).
+  GNSS driver — SparkFun u-blox GNSS v2, UBX over I2C (Qwiic).
+  Target module: SAM-M8Q (u-blox M8 generation).
 
   UBX-NAV-PVT field mapping to GnssFix:
     getGnssFixOk()      → valid          (bool)
@@ -13,8 +14,6 @@
     getLongitude()      → longitude      (int32_t deg×1e-7 → double)
     getGroundSpeed()    → speed_mps      (int32_t mm/s → float m/s)
     getHeading()        → course_deg     (int32_t deg×1e-5 → float)
-
-  Note: gnss_parser_nmea.h/.cpp are no longer used — UBX replaces NMEA parsing.
 */
 
 #include <Arduino.h>

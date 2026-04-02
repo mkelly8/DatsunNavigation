@@ -3,7 +3,8 @@
 /*
   File: gnss.h
   ----------------------------------------------------
-  GNSS driver interface — SparkFun u-blox GNSS v3 over I2C (Qwiic).
+  GNSS driver interface — SparkFun u-blox GNSS v2 over I2C (Qwiic).
+  Target module: SAM-M8Q (u-blox M8 generation).
 
   Responsibilities:
   - Initialize Wire and the u-blox module
@@ -17,7 +18,7 @@
 */
 
 #include <stdint.h>
-#include <SparkFun_u-blox_GNSS_v3.h>
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h>
 #include "types.h"
 
 class Gnss
