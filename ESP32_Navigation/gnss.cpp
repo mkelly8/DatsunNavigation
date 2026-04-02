@@ -19,6 +19,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "config.h"
+#include "logger.h"
 
 Gnss::Gnss()
     : fix{},
@@ -35,7 +36,7 @@ void Gnss::begin()
 
     if (!deviceFound)
     {
-        Serial.println("[ERROR] GNSS module not found on I2C bus (addr 0x42)");
+        logger_log(LOG_ERROR, "GNSS", "Module not found on I2C bus (addr 0x42) — check wiring");
         return;
     }
 
@@ -44,6 +45,8 @@ void Gnss::begin()
 
     // Persist the I2C-output setting to the module's flash so it survives power cycles
     gnssModule.saveConfigSelective(VAL_CFG_SUBSEC_IOPORT);
+
+    logger_log(LOG_INFO, "GNSS", "SAM-M8Q found and configured (UBX over I2C)");
 
     fix = GnssFix{};
 }

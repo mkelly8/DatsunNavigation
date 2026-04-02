@@ -22,6 +22,7 @@
 #include <Arduino.h>
 #include "config.h"
 #include "curvature.h"    // curvature_computeRadius/Ay used in healthTaskBody
+#include "logger.h"
 
 // ---------------------------------------------------------------
 // Construction
@@ -48,18 +49,24 @@ void App::begin()
     Serial.begin(115200);
     delay(300); // Allow USB-serial to enumerate before first print
 
+    // LOG_DEBUG shows everything; change to LOG_INFO to suppress DEBUG lines.
+    logger_setLevel(LOG_DEBUG);
+    logger_log(LOG_INFO, "APP", "--- Datsun Navigation starting ---");
+
     fixMutex = xSemaphoreCreateMutex();
 
-    gnss.begin();
+    logger_log(LOG_INFO, "APP", "Initialising GNSS...");
+    gnss.begin();   // logs success or error internally
+
     display.begin();
     ui.begin();
 
+    logger_log(LOG_INFO, "APP", "Starting FreeRTOS tasks");
     xTaskCreatePinnedToCore(gnssTask,   "GNSS",   TASK_STACK_GNSS,   this, TASK_PRIORITY_GNSS,   &gnssTaskHandle,   CORE_GNSS);
     xTaskCreatePinnedToCore(uiTask,     "UI",     TASK_STACK_UI,     this, TASK_PRIORITY_UI,     &uiTaskHandle,     CORE_UI);
     xTaskCreatePinnedToCore(healthTask, "Health", TASK_STACK_HEALTH, this, TASK_PRIORITY_HEALTH, &healthTaskHandle, CORE_HEALTH);
 
-    // Signal to any serial listener that the device is ready
-    Serial.println("[READY]");
+    logger_log(LOG_INFO, "APP", "Ready");
 }
 
 // ---------------------------------------------------------------

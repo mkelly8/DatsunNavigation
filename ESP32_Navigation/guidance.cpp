@@ -2,7 +2,7 @@
 #include "map_store.h"
 #include "router.h"
 #include "geo_math.h"
-#include <Arduino.h>
+#include "logger.h"
 #include <math.h>
 
 /*
@@ -45,8 +45,6 @@ void guidance_compute(int current_index)
     double bearing_deg = atan2(y, x) * GEO_RAD_TO_DEG;
     if (bearing_deg < 0.0) bearing_deg += 360.0;
 
-    Serial.print("[GUIDANCE] bearing=");
-    Serial.print(bearing_deg, 1);
-    Serial.print(" deg  next_idx=");
-    Serial.println(next_index);
+    logger_logf(LOG_INFO, "NAV", "bearing=%.1f deg  next_idx=%d",
+                bearing_deg, next_index);
 }
