@@ -2,7 +2,7 @@
 /*
   File: gnss.cpp
   ----------------------------------------------------
-  GNSS driver — SparkFun u-blox GNSS v3, UBX over I2C (Qwiic).
+  GNSS driver — SparkFun u-blox GNSS v2, UBX over I2C (Qwiic).
 
   UBX-NAV-PVT field mapping to GnssFix:
     getGnssFixOk()      → valid          (bool)

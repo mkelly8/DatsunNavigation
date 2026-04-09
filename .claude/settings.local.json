@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:/Users/Kelly/Documents/Arduino/DatsunNavigation/lib -name *.h)",
+      "Bash(find C:/Users/Kelly/Documents/Arduino/DatsunNavigation/libraries -name *.h)",
+      "Bash(\"/c/Users/Kelly/AppData/Local/Programs/Arduino IDE/resources/app/lib/backend/resources/arduino-cli.exe\" help compile)",
+      "Bash(\"/c/Users/Kelly/AppData/Local/Programs/Arduino IDE/resources/app/lib/backend/resources/arduino-cli.exe\" lib search \"SparkFun u-blox GNSS Arduino Library\")"
+    ]
+  }
+}

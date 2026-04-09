@@ -21,18 +21,18 @@ arduino-cli core install esp32:esp32 --additional-urls https://raw.githubusercon
 
 ## Libraries
 
-Install all required libraries before building:
+Library dependencies are declared in `ESP32_Navigation/sketch.yaml` and resolved automatically via Library Manager on first compile — no manual installation needed. To compile with profiles:
 
 ```
-arduino-cli lib install "SparkFun u-blox GNSS v3"
-arduino-cli lib install "TFT_eSPI"
+arduino-cli compile --profile default ESP32_Navigation
 ```
 
-Installed libraries live at: `C:\Users\m3kel\OneDrive\Documents\Arduino\libraries\`
+Arduino IDE 2.x also reads `sketch.yaml` and prompts to install dependencies automatically.
 
-### SparkFun u-blox GNSS v3
+### SparkFun u-blox GNSS v2
 
-- Header: `SparkFun_u-blox_GNSS_v3\src\SparkFun_u-blox_GNSS_v3.h`
+- Library Manager name: `SparkFun u-blox GNSS Arduino Library (2.2.28)`
+- Header: `SparkFun_u-blox_GNSS_Arduino_Library.h`
 - Main class: `SFE_UBLOX_GNSS`
 - Key methods: `begin(Wire)`, `setI2COutput(COM_TYPE_UBX)`, `saveConfigSelective(VAL_CFG_SUBSEC_IOPORT)`, `getPVT()`, `getLatitude()`, `getLongitude()`, `getSIV()`, `getFixType()`, `getGnssFixOk()`, `getGroundSpeed()`, `getHeading()`, `getHorizontalDOP()`
 - `getPVT()` **blocks** until the module delivers a fresh NAV-PVT packet (~1 s at default 1 Hz). Call only from the dedicated GNSS FreeRTOS task.
@@ -53,12 +53,12 @@ Installed libraries live at: `C:\Users\m3kel\OneDrive\Documents\Arduino\librarie
 
 Compile:
 ```
-arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi .
+arduino-cli compile --profile default ESP32_Navigation
 ```
 
 Flash:
 ```
-arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi --port COM4 .
+arduino-cli upload --profile default --port COM4 ESP32_Navigation
 ```
 Monitor:
 ```
@@ -70,9 +70,9 @@ arduino-cli monitor --port COM4 --config baudrate=115200
 Every time you change code, follow this exact sequence:
 
 1. Edit your firmware source files
-2. Compile: `arduino-cli compile --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi .`
+2. Compile: `arduino-cli compile --profile default ESP32_Navigation`
 3. If compile fails, read the errors, fix them, and recompile. Do NOT flash broken code.
-4. Flash: `arduino-cli upload --fqbn esp32:esp32:esp32s3:UploadSpeed=115200,FlashSize=8M,PartitionScheme=default_8MB,PSRAM=opi --port COM4 .`
+4. Flash: `arduino-cli upload --profile default --port COM4 ESP32_Navigation`
 5. Wait 3 seconds for the board to reboot.
 6. **Validate your changes** using the debugging methods below. Pick the right tool for what you're checking.
 7. If validation fails, go back to step 1 and iterate.
@@ -268,8 +268,7 @@ SPI1->CR1 = SPI_CR1_MSTR | SPI_CR1_BR_1;  // Master mode, fPCLK/8
 This makes it easy to verify the code against the documentation later.
 
 ## Libraries
-  - SparkFun u-blox GNSS v3:
-  C:\Users\m3kel\Documents\Arduino\libraries\SparkFun_u-blox_GNSS_v3\src\SparkFun_u-blox_GNSS_v3.h
+  - SparkFun u-blox GNSS v2: installed via Library Manager, header `SparkFun_u-blox_GNSS_Arduino_Library.h`
 
 ### ESP32 Technical Reference Structure
 

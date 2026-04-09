@@ -3,7 +3,7 @@
 /*
   File: gnss.h
   ----------------------------------------------------
-  GNSS driver interface — SparkFun u-blox GNSS v3 over I2C (Qwiic).
+  GNSS driver interface — SparkFun u-blox GNSS v2 over I2C (Qwiic).
 
   Responsibilities:
   - Initialize Wire and the u-blox module
@@ -17,7 +17,7 @@
 */
 
 #include <stdint.h>
-#include <SparkFun_u-blox_GNSS_v3.h>
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> // https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
 #include "types.h"
 
 class Gnss
