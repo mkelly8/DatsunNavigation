@@ -18,7 +18,8 @@ UI::UI()
 
 void UI::begin()
 {
-    activeScreen    = ScreenId::Status;
+    // TEST BRANCH: force navigation screen regardless of fix status
+    activeScreen    = ScreenId::Navigation;
     redrawRequested = true;
 }
 
@@ -27,24 +28,9 @@ void UI::tick(uint32_t /*nowMs*/)
     // Reserved for button input handling and timed transitions.
 }
 
-void UI::notifyFix(bool fixValid)
+void UI::notifyFix(bool /*fixValid*/)
 {
-    ScreenId next = activeScreen;
-
-    if (fixValid && activeScreen == ScreenId::Status)
-    {
-        next = ScreenId::Navigation;
-    }
-    else if (!fixValid && activeScreen == ScreenId::Navigation)
-    {
-        next = ScreenId::Status;
-    }
-
-    if (next != activeScreen)
-    {
-        activeScreen    = next;
-        redrawRequested = true;
-    }
+    // TEST BRANCH: ignore fix status — stay on navigation screen always
 }
 
 ScreenId UI::getActiveScreen() const
