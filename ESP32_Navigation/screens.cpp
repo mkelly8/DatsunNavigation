@@ -231,9 +231,10 @@ void drawNavigationScreen(const GnssFix&     fix,
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
         // Positive angle = CW = right; negative = CCW = left
-        float angleDeg = ay * 45.0f;
-        if (angleDeg >  80.0f) angleDeg =  80.0f;
-        if (angleDeg < -80.0f) angleDeg = -80.0f;
+        // Scale: 80 deg at 6 g  →  13.33 deg/g; hard cap at ±180 deg
+        float angleDeg = ay * (80.0f / 6.0f);
+        if (angleDeg >  180.0f) angleDeg =  180.0f;
+        if (angleDeg < -180.0f) angleDeg = -180.0f;
         if (isLeft) angleDeg = -fabsf(angleDeg); // left always tilts left
         else        angleDeg =  fabsf(angleDeg); // right always tilts right
 
