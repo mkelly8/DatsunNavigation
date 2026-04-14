@@ -23,44 +23,6 @@ extern TFT_eSPI tft;   // defined in display.cpp
 static ScreenId s_activeScreen = ScreenId::Boot;
 
 
-// ---------------------------------------------------------------
-// Turn arrow helper
-//
-// Draws a navigation-style turn arrow centred on the 240 px wide
-// display.  The arrow points UPWARD (approach direction) and bends
-// 90 degrees left or right at the top.
-//
-// Geometry (all coords for 240 x 320 portrait):
-//   Shaft  : 8 px wide vertical bar, y = 225 – 258
-//   Corner : quarter-circle arc, r=45 / ir=37 (8 px thick)
-//   Head   : filled triangle, exits left or right from arc top
-//
-//   RIGHT: arc centre (125,225), 270°→360°, head tip at (160,184)
-//   LEFT : arc centre (115,225),   0°→90°, head tip at ( 80,184)
-// ---------------------------------------------------------------
-static void drawTurnArrow(bool isLeft, uint16_t color)
-{
-    if (isLeft)
-    {
-        // Quarter arc: top (115,180) → right (160,225)
-        tft.drawArc(115, 225, 45, 37, 0, 90, color, TFT_BLACK);
-        // Shaft below arc right-exit point
-        tft.fillRect(152, 225, 8, 33, color);
-        // Arrowhead pointing left from arc top
-        //   tip (80,184)  base-top (115,167)  base-bot (115,201)
-        tft.fillTriangle(80, 184, 115, 167, 115, 201, color);
-    }
-    else
-    {
-        // Quarter arc: left (80,225) → top (125,180)
-        tft.drawArc(125, 225, 45, 37, 270, 360, color, TFT_BLACK);
-        // Shaft below arc left-exit point
-        tft.fillRect(80, 225, 8, 33, color);
-        // Arrowhead pointing right from arc top
-        //   tip (160,184)  base-top (125,167)  base-bot (125,201)
-        tft.fillTriangle(160, 184, 125, 167, 125, 201, color);
-    }
-}
 
 
 // ---------------------------------------------------------------
@@ -257,7 +219,29 @@ void drawNavigationScreen(const GnssFix&     fix,
         const bool     isLeft     = (disp.segment.direction == TURN_LEFT);
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
-        drawTurnArrow(isLeft, arrowColor);
+        // Sprite 200x110, pushed at display (20,168) → centred at x=120
+        // Arc convention: 0°=bottom, 90°=left, 180°=top, 270°=right, CW sweep.
+        // Arc centre (100,60), outer r=48, inner r=36 (12 px thick).
+        // RIGHT: arc 90→180 (left→top), shaft left x=52-64, tip→right
+        // LEFT:  arc 180→270 (top→right), shaft right x=136-148, tip→left
+        static TFT_eSprite arrowSpr(&tft);
+        static bool arrowSprCreated = false;
+        if (!arrowSprCreated) { arrowSpr.createSprite(200, 110); arrowSprCreated = true; }
+
+        arrowSpr.fillSprite(TFT_BLACK);
+        if (isLeft)
+        {
+            arrowSpr.drawArc(100, 60, 48, 36, 180, 270, arrowColor, TFT_BLACK);
+            arrowSpr.fillRect(136, 60, 12, 50, arrowColor);
+            arrowSpr.fillTriangle(45, 18, 100, 8, 100, 28, arrowColor);
+        }
+        else
+        {
+            arrowSpr.drawArc(100, 60, 48, 36, 90, 180, arrowColor, TFT_BLACK);
+            arrowSpr.fillRect(52, 60, 12, 50, arrowColor);
+            arrowSpr.fillTriangle(155, 18, 100, 8, 100, 28, arrowColor);
+        }
+        arrowSpr.pushSprite(20, 168);
 
         tft.setTextDatum(MC_DATUM);
         tft.setTextColor(arrowColor, TFT_BLACK);
