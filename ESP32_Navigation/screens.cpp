@@ -24,6 +24,46 @@ static ScreenId s_activeScreen = ScreenId::Boot;
 
 
 // ---------------------------------------------------------------
+// Turn arrow helper
+//
+// Draws a navigation-style turn arrow centred on the 240 px wide
+// display.  The arrow points UPWARD (approach direction) and bends
+// 90 degrees left or right at the top.
+//
+// Geometry (all coords for 240 x 320 portrait):
+//   Shaft  : 8 px wide vertical bar, y = 225 – 258
+//   Corner : quarter-circle arc, r=45 / ir=37 (8 px thick)
+//   Head   : filled triangle, exits left or right from arc top
+//
+//   RIGHT: arc centre (125,225), 270°→360°, head tip at (160,184)
+//   LEFT : arc centre (115,225),   0°→90°, head tip at ( 80,184)
+// ---------------------------------------------------------------
+static void drawTurnArrow(bool isLeft, uint16_t color)
+{
+    if (isLeft)
+    {
+        // Quarter arc: top (115,180) → right (160,225)
+        tft.drawArc(115, 225, 45, 37, 0, 90, color, TFT_BLACK);
+        // Shaft below arc right-exit point
+        tft.fillRect(152, 225, 8, 33, color);
+        // Arrowhead pointing left from arc top
+        //   tip (80,184)  base-top (115,167)  base-bot (115,201)
+        tft.fillTriangle(80, 184, 115, 167, 115, 201, color);
+    }
+    else
+    {
+        // Quarter arc: left (80,225) → top (125,180)
+        tft.drawArc(125, 225, 45, 37, 270, 360, color, TFT_BLACK);
+        // Shaft below arc left-exit point
+        tft.fillRect(80, 225, 8, 33, color);
+        // Arrowhead pointing right from arc top
+        //   tip (160,184)  base-top (125,167)  base-bot (125,201)
+        tft.fillTriangle(160, 184, 125, 167, 125, 201, color);
+    }
+}
+
+
+// ---------------------------------------------------------------
 // Boot screen — shown once at startup
 // ---------------------------------------------------------------
 void drawBootScreen(const GnssFix&     /*fix*/,
@@ -217,25 +257,12 @@ void drawNavigationScreen(const GnssFix&     fix,
         const bool     isLeft     = (disp.segment.direction == TURN_LEFT);
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
-        // Shaft (2 px thick), centred vertically at y=218
-        tft.drawFastHLine(45, 218, 150, arrowColor);
-        tft.drawFastHLine(45, 219, 150, arrowColor);
-
-        if (isLeft)
-        {
-            // Tip at left: (25,218), base corners (52,200) (52,237)
-            tft.fillTriangle(25, 218, 52, 200, 52, 237, arrowColor);
-        }
-        else
-        {
-            // Tip at right: (215,218), base corners (188,200) (188,237)
-            tft.fillTriangle(215, 218, 188, 200, 188, 237, arrowColor);
-        }
+        drawTurnArrow(isLeft, arrowColor);
 
         tft.setTextDatum(MC_DATUM);
         tft.setTextColor(arrowColor, TFT_BLACK);
         tft.setTextSize(3);
-        tft.drawString(isLeft ? "LEFT" : "RIGHT", 120, 260);
+        tft.drawString(isLeft ? "LEFT" : "RIGHT", 120, 270);
     }
 
     // ---- Ay value (bottom centre) -------------------------------
