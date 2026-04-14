@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(arduino-cli compile:*)",
+      "Read(//c/Users/m3kel/OneDrive/Documents/Arduino/libraries/**)",
+      "Read(//c/Users/Kelly/OneDrive/Documents/Arduino/libraries/**)"
+    ]
+  }
+}
