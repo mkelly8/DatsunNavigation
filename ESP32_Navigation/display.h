@@ -14,6 +14,7 @@
 */
 
 #include <stdint.h>
+#include <TFT_eSPI.h>
 #include "types.h"
 #include "nav_state.h"
 #include "curve_scanner.h"

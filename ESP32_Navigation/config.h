@@ -31,15 +31,22 @@
 // Below this the vehicle is considered stationary; ETA is set to 0.
 #define NAV_MIN_SPEED_MPS_FOR_ETA  0.5f
 
+// Maximum distance (m) at which time-to-curve is computed and displayed.
+// Beyond this, only distance is shown — long-range ETA is too sensitive
+// to GPS speed noise to be useful.
+#define NAV_TIME_DISPLAY_DIST_M  150.0f
+
 // ---- FreeRTOS task priorities (higher number = more urgent) --
 #define TASK_PRIORITY_GNSS    5
 #define TASK_PRIORITY_UI      3
 #define TASK_PRIORITY_HEALTH  1
 
 // ---- FreeRTOS task stack sizes (bytes) -----------------------
-#define TASK_STACK_GNSS    4096  // Navigator pipeline (map-match + guidance + curve scan) runs here
-#define TASK_STACK_UI      4096   // Extra headroom for future TFT rendering
-#define TASK_STACK_HEALTH  1024
+// SparkFun u-blox v2 getPVT() has a deep call stack (~4-6 KB alone).
+// Add navigation pipeline (map-match + guidance + curve scan) on top → 16 KB.
+#define TASK_STACK_GNSS    16384
+#define TASK_STACK_UI       8192  // Headroom for TFT_eSPI rendering (sprite + font stacks)
+#define TASK_STACK_HEALTH   2048  // Minimum safe for any task using printf-style formatting
 
 // ---- Core assignments (0 = protocol core, 1 = app core) ------
 #define CORE_GNSS    1
@@ -49,7 +56,7 @@
 // ---- Display SPI (ILI9341 via TFT_eSPI) ----------------------
 // These must match User_Setup.h in the TFT_eSPI library folder.
 // Avoids: GPIO 0 (BOOT), 8/9 (Qwiic I2C), 19/20 (USB), 48 (RGB LED)
-#define TFT_MISO_PIN  13
+#define TFT_MISO_PIN  -1   // Not connected — display is write-only; GPIO 13 conflicts when wired
 #define TFT_MOSI_PIN  11
 #define TFT_SCLK_PIN  12
 #define TFT_CS_PIN    10
