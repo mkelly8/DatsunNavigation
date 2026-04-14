@@ -3,6 +3,6 @@
 
 #include "map_types.h"
 
-void guidance_compute(int current_index);
+void guidance_compute(int current_index, TravelDirection direction);
 
 #endif // GUIDANCE_H

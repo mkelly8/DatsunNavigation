@@ -4,10 +4,11 @@
 #include "map_types.h"
 
 typedef struct {
-    int current_index;
-    double latitude;
-    double longitude;
-    double speed;
+    int             current_index;
+    double          latitude;
+    double          longitude;
+    double          speed;
+    TravelDirection direction;
 } NavState;
 
 void navState_update(NavState* state, double lat, double lon, double speed);

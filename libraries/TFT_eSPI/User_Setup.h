@@ -166,7 +166,10 @@
 
 // ###### DATSUN NAV — ESP32-S3 pin assignment (matches config.h) ######
 
-#define TFT_MISO  13
+// GPIO 13 is the FSPI IOMUX MISO pin but is physically wired to the display MISO.
+// When set to 13, the display drives that line during SPI transactions and corrupts writes.
+// Routing MISO to GPIO 2 (unused/floating) keeps it out of the SPI bus entirely.
+#define TFT_MISO   2   // Dummy — routed away from GPIO 13 to stop bus contention
 #define TFT_MOSI  11
 #define TFT_SCLK  12
 #define TFT_CS    10  // Chip select
@@ -174,16 +177,13 @@
 #define TFT_RST    5  // Reset pin — GPIO 5
 
 // Use FSPI (SPI2) port on ESP32-S3.
-// GPIO 10/11/12/13 are the SPI2 IOMUX pins on ESP32-S3 — exact match for our wiring.
-// Using IOMUX (not GPIO matrix) allows reliable 40MHz operation.
 // The original StoreProhibited crash was caused by the global `SPIClass& spi = SPI`
 // having _spi = null in Arduino-ESP32 v3.x before any begin() call — NOT by PSRAM.
 // USE_FSPI_PORT creates a fresh SPIClass(FSPI) instance which initialises correctly.
 #define USE_FSPI_PORT
 
-// ILI9341 panels commonly use BGR colour order
+// ILI9341 panels use BGR colour order
 #define TFT_RGB_ORDER TFT_BGR
-
 
 //#define TFT_BL PIN_D1  // LED back-light (only for ST7789 with backlight control pin)
 
@@ -369,7 +369,7 @@
 // #define SPI_FREQUENCY  10000000
 // #define SPI_FREQUENCY  20000000
 // #define SPI_FREQUENCY  27000000
-#define SPI_FREQUENCY  10000000   // Safe for GPIO matrix routing on ESP32-S3 (max ~26.7 MHz)
+#define SPI_FREQUENCY  20000000   // 20 MHz — safe for GPIO matrix on ESP32-S3 (max ~26.7 MHz)
 // #define SPI_FREQUENCY  55000000 // STM32 SPI1 only (SPI2 maximum is 27MHz)
 // #define SPI_FREQUENCY  80000000
 
@@ -378,9 +378,6 @@
 
 // The XPT2046 requires a lower SPI clock rate of 2.5MHz so we define that here:
 #define SPI_TOUCH_FREQUENCY  2500000
-
-// The ESP32-S3 has FSPI (SPI2) and HSPI (SPI3). USE_FSPI_PORT is defined above.
-#define USE_FSPI_PORT
 
 // Comment out the following #define if "SPI Transactions" do not need to be
 // supported. When commented out the code size will be smaller and sketches will

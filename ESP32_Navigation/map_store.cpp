@@ -1,5 +1,6 @@
 #include "map_store.h"
 #include "route_data.h"
+#include <cstddef>
 
 /*
   File: map_store.cpp

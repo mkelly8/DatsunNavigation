@@ -68,6 +68,17 @@ typedef enum
 
 
 /* -----------------------------
+   Travel Direction
+------------------------------*/
+
+typedef enum {
+    TRAVEL_UNKNOWN  =  0,
+    TRAVEL_FORWARD  =  1,   // index increasing
+    TRAVEL_BACKWARD = -1    // index decreasing
+} TravelDirection;
+
+
+/* -----------------------------
    Curve Segment
 ------------------------------*/
 

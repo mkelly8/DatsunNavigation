@@ -24,9 +24,9 @@
 
 // Use shared constants from geo_math.h — no local copies needed.
 
-void guidance_compute(int current_index)
+void guidance_compute(int current_index, TravelDirection direction)
 {
-    const int next_index = router_getNextPoint(current_index);
+    const int next_index = router_getNextPoint(current_index, direction);
     if (next_index < 0) return; // end of route
 
     const RoutePoint* current = mapStore_getPointPtr((uint32_t)current_index);

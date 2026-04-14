@@ -53,6 +53,6 @@ typedef struct
   calls curvature_computeRadius which does the same.  Safe to call
   from any task without holding fixMutex.
 */
-CurveScan curveScanner_scan(int current_index);
+CurveScan curveScanner_scan(int current_index, TravelDirection direction);
 
 #endif // CURVE_SCANNER_H

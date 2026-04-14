@@ -79,7 +79,7 @@ static TurnDirection cs_computeDirection(uint32_t entry_idx,
 
 // ---- Public function ------------------------------------------
 
-CurveScan curveScanner_scan(int current_index)
+CurveScan curveScanner_scan(int current_index, TravelDirection direction)
 {
     CurveScan result;
     memset(&result, 0, sizeof(result));
@@ -87,6 +87,102 @@ CurveScan curveScanner_scan(int current_index)
 
     const uint32_t count = mapStore_getPointCount();
     if (count < 3 || current_index < 0) return result;
+
+    // ---- Backward scan (index decreasing) ----------------------
+    if (direction == TRAVEL_BACKWARD)
+    {
+        // Guard: curvature_computeRadius(i) needs i >= 1 (uses i-1).
+        const int scan_start  = current_index - 1;
+        const int scan_end    = current_index - CURVE_SCAN_POINTS;
+        const int clamped_end = (scan_end > 1) ? scan_end : 1;
+
+        if (scan_start < clamped_end) return result;
+
+        bool   in_run    = false;
+        int    run_start = 0; // highest index in the run (first encountered going down)
+        double run_min_r = GEO_STRAIGHT_RADIUS_M;
+
+        for (int i = scan_start; i >= clamped_end; i--)
+        {
+            const double radius = curvature_computeRadius(i);
+
+            if (radius < CURVE_RADIUS_THRESHOLD_M)
+            {
+                if (!in_run)
+                {
+                    in_run    = true;
+                    run_start = i; // highest index in this run
+                    run_min_r = radius;
+                }
+                else if (radius < run_min_r)
+                {
+                    run_min_r = radius;
+                }
+            }
+            else
+            {
+                if (in_run)
+                {
+                    // run ended at index (i+1); last point in run is i+1
+                    const int run_length = run_start - (i + 1) + 1;
+
+                    if (run_length >= CURVE_MIN_POINTS)
+                    {
+                        const uint32_t entry_idx = (uint32_t)run_start;
+                        const uint32_t exit_idx  = (uint32_t)(i + 1);
+                        const uint32_t mid_idx   = (entry_idx + exit_idx) / 2;
+
+                        TurnDirection dir = cs_computeDirection(entry_idx, mid_idx, exit_idx);
+                        if      (dir == TURN_LEFT)  dir = TURN_RIGHT;
+                        else if (dir == TURN_RIGHT) dir = TURN_LEFT;
+
+                        result.found                  = true;
+                        result.segment.entry_index    = entry_idx;
+                        result.segment.midpoint_index = mid_idx;
+                        result.segment.exit_index     = exit_idx;
+                        result.segment.min_radius_m   = run_min_r;
+                        result.segment.direction      = dir;
+                        result.distance_m             = (float)((current_index - run_start)
+                                                       * ROUTE_POINT_SPACING_M);
+                        return result;
+                    }
+
+                    in_run    = false;
+                    run_min_r = GEO_STRAIGHT_RADIUS_M;
+                }
+            }
+        }
+
+        // Run extends to edge of scan window
+        if (in_run)
+        {
+            const int run_length = run_start - clamped_end + 1;
+
+            if (run_length >= CURVE_MIN_POINTS)
+            {
+                const uint32_t entry_idx = (uint32_t)run_start;
+                const uint32_t exit_idx  = (uint32_t)clamped_end;
+                const uint32_t mid_idx   = (entry_idx + exit_idx) / 2;
+
+                TurnDirection dir = cs_computeDirection(entry_idx, mid_idx, exit_idx);
+                if      (dir == TURN_LEFT)  dir = TURN_RIGHT;
+                else if (dir == TURN_RIGHT) dir = TURN_LEFT;
+
+                result.found                  = true;
+                result.segment.entry_index    = entry_idx;
+                result.segment.midpoint_index = mid_idx;
+                result.segment.exit_index     = exit_idx;
+                result.segment.min_radius_m   = run_min_r;
+                result.segment.direction      = dir;
+                result.distance_m             = (float)((current_index - run_start)
+                                               * ROUTE_POINT_SPACING_M);
+            }
+        }
+
+        return result;
+    }
+
+    // ---- Forward scan (FORWARD or UNKNOWN) ---------------------
 
     // Scan window
     const int scan_start  = current_index + 1;

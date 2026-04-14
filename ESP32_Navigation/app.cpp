@@ -94,12 +94,16 @@ void App::healthTask(void* param)
 
 void App::gnssTaskBody()
 {
-    // No vTaskDelayUntil here — gnss.tick() calls getPVT() which blocks
-    // internally until the module delivers a fresh NAV-PVT packet (~1 s at 1 Hz).
+    // getPVT() blocks ~1 s when the module is present, naturally yielding CPU.
+    // When the module is absent tick() returns immediately — add an explicit
+    // delay so this high-priority task does not starve the UI and Health tasks.
     while (true)
     {
         const uint32_t now = millis();
         gnss.tick(now);
+
+        if (!gnss.isDeviceFound())
+            vTaskDelay(pdMS_TO_TICKS(100));
 
         const GnssFix newFix = gnss.getFix();
 

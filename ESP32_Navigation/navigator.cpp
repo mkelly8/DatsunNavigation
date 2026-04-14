@@ -27,11 +27,13 @@ void Navigator::update(const GnssFix& fix)
                     fix.longitude,
                     (double)fix.speed_mps);
 
-    guidance_compute(navState_.current_index);
+    guidance_compute(navState_.current_index, navState_.direction);
 
-    curveScan_ = curveScanner_scan(navState_.current_index);
+    curveScan_ = curveScanner_scan(navState_.current_index, navState_.direction);
 
-    if (curveScan_.found && fix.speed_mps > NAV_MIN_SPEED_MPS_FOR_ETA)
+    if (curveScan_.found
+        && fix.speed_mps > NAV_MIN_SPEED_MPS_FOR_ETA
+        && curveScan_.distance_m <= NAV_TIME_DISPLAY_DIST_M)
     {
         curveScan_.time_to_curve_s = curveScan_.distance_m / fix.speed_mps;
     }

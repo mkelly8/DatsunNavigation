@@ -24,16 +24,61 @@ Display::Display()
 
 void Display::begin()
 {
-    tft.init();
-    tft.setRotation(0);
-    tft.invertDisplay(true);         // landscape: 320 x 240
-    tft.fillScreen(TFT_BLACK);
+    // ---- Pin / config dump ----
+    Serial.println("[DISP] begin()");
+    Serial.print("[DISP] pins: MOSI="); Serial.print(TFT_MOSI);
+    Serial.print(" SCLK=");            Serial.print(TFT_SCLK);
+    Serial.print(" CS=");              Serial.print(TFT_CS);
+    Serial.print(" DC=");              Serial.print(TFT_DC);
+    Serial.print(" RST=");             Serial.print(TFT_RST);
+    Serial.print(" BL=");              Serial.print(TFT_BL_PIN);
+#ifdef TFT_MISO
+    Serial.print(" MISO=");            Serial.print(TFT_MISO);
+#else
+    Serial.print(" MISO=<undef>");
+#endif
+    Serial.print(" freq=");            Serial.print(SPI_FREQUENCY);
+#ifdef USE_FSPI_PORT
+    Serial.println(" port=FSPI");
+#else
+    Serial.println(" port=SPI(default)");
+#endif
 
-    // Backlight PWM — full brightness
+    // ---- Init sequence ----
+    Serial.println("[DISP] calling tft.init()...");
+    tft.init();
+    Serial.println("[DISP] tft.init() returned");
+
+    tft.setRotation(0);
+    Serial.println("[DISP] setRotation(0) done");
+
+    tft.invertDisplay(true);
+    Serial.println("[DISP] invertDisplay(true) done");
+
+    tft.fillScreen(TFT_BLACK);
+    Serial.println("[DISP] fillScreen(BLACK) done");
+
+    // ---- Backlight ----
     ledcAttach(TFT_BL_PIN, TFT_BL_FREQ_HZ, TFT_BL_RES_BITS);
+    Serial.println("[DISP] ledcAttach done");
     ledcWrite(TFT_BL_PIN, 220);
+    Serial.println("[DISP] ledcWrite(220) done — backlight should be ON");
+
+    // ---- 3-second colour flash ----
+    const uint16_t testColors[]  = { TFT_RED,   TFT_GREEN, TFT_BLUE  };
+    const char*    colorNames[]  = { "RED",     "GREEN",   "BLUE"    };
+    for (int i = 0; i < 3; i++) {
+        Serial.print("[DISP] fillScreen("); Serial.print(colorNames[i]); Serial.print(") ... ");
+        const uint32_t t0 = millis();
+        tft.fillScreen(testColors[i]);
+        Serial.print(millis() - t0); Serial.println("ms");
+        delay(1000);
+    }
+    tft.fillScreen(TFT_BLACK);
+    Serial.println("[DISP] colour flash done");
 
     lastRenderMs = millis();
+    Serial.println("[DISP] begin() complete");
 }
 
 void Display::render(ScreenId           screen,
