@@ -216,41 +216,64 @@ void drawNavigationScreen(const GnssFix&     fix,
     }
 
     // ---- Direction arrow + label --------------------------------
-    // No fillRect here — arrow zone cleared once in fresh block above.
-    // Sprite (black bg) overwrites its own area each frame without a black flash.
+    // Sprite 120x100 at display (60,165); arrow centre at sprite (60,50).
+    // Arrow points UP at 0 deg, rotates CW for right turns, CCW for left.
+    // Rotation angle = Ay * 45 deg/g, clamped ±80 deg.
+    static TFT_eSprite arrowSpr(&tft);
+    static bool arrowSprCreated = false;
+    if (!arrowSprCreated) { arrowSpr.createSprite(120, 100); arrowSprCreated = true; }
+
+    arrowSpr.fillSprite(TFT_BLACK);
+
     if (disp.found)
     {
         const bool     isLeft     = (disp.segment.direction == TURN_LEFT);
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
-        // Sprite 160x95, pushed at display (40,165) → centre x=120
-        // Arc: 0°=bottom, 90°=left, 180°=top, 270°=right, CW.
-        // Centre (80,55), outer r=38, inner r=26 (12 px), smooth=false.
-        // RIGHT: arc 90→180, shaft x=42-54, arrowhead tip→(130,23)
-        // LEFT:  arc 180→270, shaft x=106-118, arrowhead tip→(30,23)
-        static TFT_eSprite arrowSpr(&tft);
-        static bool arrowSprCreated = false;
-        if (!arrowSprCreated) { arrowSpr.createSprite(160, 95); arrowSprCreated = true; }
+        // Positive angle = CW = right; negative = CCW = left
+        float angleDeg = ay * 45.0f;
+        if (angleDeg >  80.0f) angleDeg =  80.0f;
+        if (angleDeg < -80.0f) angleDeg = -80.0f;
+        if (isLeft) angleDeg = -fabsf(angleDeg); // left always tilts left
+        else        angleDeg =  fabsf(angleDeg); // right always tilts right
 
-        arrowSpr.fillSprite(TFT_BLACK);
-        if (isLeft)
-        {
-            arrowSpr.drawArc(80, 55, 38, 26, 180, 270, arrowColor, TFT_BLACK, false);
-            arrowSpr.fillRect(106, 55, 12, 40, arrowColor);
-            arrowSpr.fillTriangle(30, 23, 80, 13, 80, 33, arrowColor);
-        }
-        else
-        {
-            arrowSpr.drawArc(80, 55, 38, 26, 90, 180, arrowColor, TFT_BLACK, false);
-            arrowSpr.fillRect(42, 55, 12, 40, arrowColor);
-            arrowSpr.fillTriangle(130, 23, 80, 13, 80, 33, arrowColor);
-        }
-        arrowSpr.pushSprite(40, 165);
+        const float cosA = cosf(angleDeg * 0.01745329f);
+        const float sinA = sinf(angleDeg * 0.01745329f);
+
+        // Rotate local (lx,ly) → sprite (sx,sy); sprite centre = (60,50)
+        #define ROT(lx, ly, sx, sy) \
+            sx = (int)((lx)*cosA - (ly)*sinA) + 60; \
+            sy = (int)((lx)*sinA + (ly)*cosA) + 50
+
+        // Arrow local coords, tip pointing UP (local y-axis = up)
+        // Arrowhead: tip (0,-42), base corners (±16, -18)
+        // Shaft:     rect corners (±7, -18) top, (±7, +30) bottom
+        int tx, ty, hlx, hly, hrx, hry;
+        int stlx, stly, strx, stry, sblx, sbly, sbrx, sbry;
+        ROT( 0,  -42, tx,   ty  );
+        ROT(-16, -18, hlx,  hly );
+        ROT( 16, -18, hrx,  hry );
+        ROT( -7, -18, stlx, stly);
+        ROT(  7, -18, strx, stry);
+        ROT( -7,  30, sblx, sbly);
+        ROT(  7,  30, sbrx, sbry);
+        #undef ROT
+
+        arrowSpr.fillTriangle(tx,   ty,   hlx,  hly,  hrx,  hry,  arrowColor); // head
+        arrowSpr.fillTriangle(stlx, stly, strx, stry, sblx, sbly, arrowColor); // shaft ◤
+        arrowSpr.fillTriangle(strx, stry, sbrx, sbry, sblx, sbly, arrowColor); // shaft ◢
+
+        arrowSpr.pushSprite(60, 165);
 
         tft.setTextDatum(MC_DATUM);
         tft.setTextColor(arrowColor, TFT_BLACK);
         tft.setTextSize(3);
         tft.drawString(isLeft ? "LEFT" : "RIGHT", 120, 270);
+    }
+    else
+    {
+        arrowSpr.pushSprite(60, 165); // push blank sprite to erase stale arrow
+        tft.fillRect(0, 262, 240, 20, TFT_BLACK); // erase label row
     }
 
     // ---- Ay value (bottom centre) -------------------------------
