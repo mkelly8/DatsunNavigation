@@ -159,6 +159,9 @@ void drawNavigationScreen(const GnssFix&     fix,
         tft.setTextColor(TFT_DARKGREY, TFT_BLACK);
         tft.setTextSize(2);
         tft.drawString("km/h", 120, 120);
+
+        // Arrow zone cleared once; sprite + label handle it every frame after
+        tft.fillRect(0, 163, 240, 120, TFT_BLACK);
     }
 
     // ---- TEST OVERRIDES — remove before merging to Test---AL ----
@@ -213,35 +216,36 @@ void drawNavigationScreen(const GnssFix&     fix,
     }
 
     // ---- Direction arrow + label --------------------------------
-    tft.fillRect(0, 163, 240, 120, TFT_BLACK);
+    // No fillRect here — arrow zone cleared once in fresh block above.
+    // Sprite (black bg) overwrites its own area each frame without a black flash.
     if (disp.found)
     {
         const bool     isLeft     = (disp.segment.direction == TURN_LEFT);
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
-        // Sprite 200x110, pushed at display (20,168) → centred at x=120
-        // Arc convention: 0°=bottom, 90°=left, 180°=top, 270°=right, CW sweep.
-        // Arc centre (100,60), outer r=48, inner r=36 (12 px thick).
-        // RIGHT: arc 90→180 (left→top), shaft left x=52-64, tip→right
-        // LEFT:  arc 180→270 (top→right), shaft right x=136-148, tip→left
+        // Sprite 160x95, pushed at display (40,165) → centre x=120
+        // Arc: 0°=bottom, 90°=left, 180°=top, 270°=right, CW.
+        // Centre (80,55), outer r=38, inner r=26 (12 px), smooth=false.
+        // RIGHT: arc 90→180, shaft x=42-54, arrowhead tip→(130,23)
+        // LEFT:  arc 180→270, shaft x=106-118, arrowhead tip→(30,23)
         static TFT_eSprite arrowSpr(&tft);
         static bool arrowSprCreated = false;
-        if (!arrowSprCreated) { arrowSpr.createSprite(200, 110); arrowSprCreated = true; }
+        if (!arrowSprCreated) { arrowSpr.createSprite(160, 95); arrowSprCreated = true; }
 
         arrowSpr.fillSprite(TFT_BLACK);
         if (isLeft)
         {
-            arrowSpr.drawArc(100, 60, 48, 36, 180, 270, arrowColor, TFT_BLACK);
-            arrowSpr.fillRect(136, 60, 12, 50, arrowColor);
-            arrowSpr.fillTriangle(45, 18, 100, 8, 100, 28, arrowColor);
+            arrowSpr.drawArc(80, 55, 38, 26, 180, 270, arrowColor, TFT_BLACK, false);
+            arrowSpr.fillRect(106, 55, 12, 40, arrowColor);
+            arrowSpr.fillTriangle(30, 23, 80, 13, 80, 33, arrowColor);
         }
         else
         {
-            arrowSpr.drawArc(100, 60, 48, 36, 90, 180, arrowColor, TFT_BLACK);
-            arrowSpr.fillRect(52, 60, 12, 50, arrowColor);
-            arrowSpr.fillTriangle(155, 18, 100, 8, 100, 28, arrowColor);
+            arrowSpr.drawArc(80, 55, 38, 26, 90, 180, arrowColor, TFT_BLACK, false);
+            arrowSpr.fillRect(42, 55, 12, 40, arrowColor);
+            arrowSpr.fillTriangle(130, 23, 80, 13, 80, 33, arrowColor);
         }
-        arrowSpr.pushSprite(20, 168);
+        arrowSpr.pushSprite(40, 165);
 
         tft.setTextDatum(MC_DATUM);
         tft.setTextColor(arrowColor, TFT_BLACK);
