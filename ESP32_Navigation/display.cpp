@@ -5,7 +5,7 @@
   Display implementation.
 
   Dispatches to screen-specific functions which draw to the
-  ILI9341 TFT via TFT_eSPI (landscape, 320 x 240).
+  ILI9341 TFT via TFT_eSPI (portrait, 240 x 320).
 
   tft is defined here as a global so that screens.cpp can
   access it via extern without changing the screens API.
