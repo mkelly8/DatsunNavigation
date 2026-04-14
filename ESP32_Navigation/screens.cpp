@@ -157,9 +157,14 @@ void drawNavigationScreen(const GnssFix&     fix,
         tft.drawString("km/h", 160, 108);
     }
 
-    // ---- Compute Ay at current map position ---------------------
-    const double radius = curvature_computeRadius(nav.current_index);
-    const float  ay     = (float)curvature_computeAy((double)fix.speed_mps, radius);
+    // ---- TEST OVERRIDES — remove before merging to Test---AL ----
+    const float   ay           = 3.5f;
+    CurveScan     testCurve    = curve;
+    testCurve.found            = true;
+    testCurve.segment.direction = TURN_RIGHT;
+    testCurve.distance_m       = 50.0f;
+    const CurveScan& dispCurve = testCurve;
+    // ---- end overrides ------------------------------------------
 
     // ---- SAT count (top-left) -----------------------------------
     tft.fillRect(0, 0, 120, 30, TFT_BLACK);
@@ -170,7 +175,7 @@ void drawNavigationScreen(const GnssFix&     fix,
     tft.drawString(buf, 5, 6);
 
     // ---- Flashing warning (top-right) ---------------------------
-    if (curve.found && ((millis() % 800) < 400))
+    if (dispCurve.found && ((millis() % 800) < 400))
     {
         tft.fillRect(228, 2, 90, 26, TFT_RED);
         tft.setTextDatum(MC_DATUM);
@@ -194,20 +199,20 @@ void drawNavigationScreen(const GnssFix&     fix,
 
     // ---- Distance to curve --------------------------------------
     tft.fillRect(0, 120, 320, 22, TFT_BLACK);
-    if (curve.found)
+    if (dispCurve.found)
     {
         tft.setTextDatum(MC_DATUM);
         tft.setTextColor(TFT_YELLOW, TFT_BLACK);
         tft.setTextSize(2);
-        snprintf(buf, sizeof(buf), "%.0f m to curve", curve.distance_m);
+        snprintf(buf, sizeof(buf), "%.0f m to curve", dispCurve.distance_m);
         tft.drawString(buf, 160, 132);
     }
 
     // ---- Direction arrow + label --------------------------------
     tft.fillRect(60, 148, 200, 62, TFT_BLACK);
-    if (curve.found)
+    if (dispCurve.found)
     {
-        const bool     isLeft     = (curve.segment.direction == TURN_LEFT);
+        const bool     isLeft     = (dispCurve.segment.direction == TURN_LEFT);
         const uint16_t arrowColor = isLeft ? TFT_CYAN : TFT_ORANGE;
 
         // Shaft (2 px thick)
